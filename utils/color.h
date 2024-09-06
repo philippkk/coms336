@@ -3,8 +3,6 @@
 
 #include "vec3.h"
 
-#include <iostream>
-
 using color = vec3;
 
 void write_color(std::vector<int> &pixel, const color& pixel_color) {
