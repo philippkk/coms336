@@ -2,3 +2,9 @@ run following commands
 `make`
 `./ray`
 profit
+
+
+for go:
+cd go
+make
+make run
