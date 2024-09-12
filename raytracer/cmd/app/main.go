@@ -31,7 +31,11 @@ func main() {
 			pixels = append(pixels, colors...)
 		}
 	}
-	file.Write(pixels)
+	
+	_, err = file.Write(pixels)
+	if err != nil {
+		return
+	}
 
 	fmt.Println("Done.")
 
