@@ -1,3 +1,3 @@
-module raytracer
+module github.com/philippkk/coms336/raytracer
 
-go 1.23.0
+go 1.23.1
