@@ -10,7 +10,7 @@ import (
 func main() {
 	width, height := 2000, 2000
 	maxColorValue := 255
-	
+
 	file, err := os.Create("goimage.ppm")
 	if err != nil {
 		fmt.Println("Error creating file:", err)
