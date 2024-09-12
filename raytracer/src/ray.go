@@ -1,4 +1,4 @@
-package main
+package raytracer
 
 import (
 	"fmt"
@@ -10,6 +10,8 @@ import (
 func main() {
 	width, height := 2000, 2000
 	maxColorValue := 255
+
+	thing := newVec3(1, 2, 3)
 
 	file, err := os.Create("goimage.ppm")
 	if err != nil {
