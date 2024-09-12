@@ -1,10 +1,12 @@
 run following commands
+`cd c++`
 `make`
 `./ray`
 profit
 
 
 for go:
-cd go
-make
-make run
+`cd raytracer`
+`make run`
+
+`make help` if youre a nerd
