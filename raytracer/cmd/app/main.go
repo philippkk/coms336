@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/philippkk/coms336/raytracer/internal/utils"
 	"os"
 	"os/exec"
 	"runtime"
@@ -18,8 +19,12 @@ func main() {
 	}
 	defer file.Close()
 
-	fmt.Fprintf(file, "P6\n%d %d\n%d\n", width, height, maxColorValue)
+	// vec3 testing :)
+	thing := utils.NewVec3(1, 2, 3)
+	thing2 := utils.NewVec3(3, 4, 5)
+	fmt.Println(thing.Cross(thing2))
 
+	fmt.Fprintf(file, "P6\n%d %d\n%d\n", width, height, maxColorValue)
 	var pixels []byte
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
@@ -31,7 +36,7 @@ func main() {
 			pixels = append(pixels, colors...)
 		}
 	}
-	
+
 	_, err = file.Write(pixels)
 	if err != nil {
 		return
