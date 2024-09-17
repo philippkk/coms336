@@ -8,11 +8,23 @@ import (
 	"runtime"
 )
 
+func HitSphere(r utils.Ray, s utils.Vec3, radius float64) bool {
+	oc := s.MinusEq(r.Origin)
+	a := r.Direction.Dot(r.Direction)
+	b := 2.0 * oc.Dot(r.Direction)
+	c := oc.Dot(oc) - radius*radius
+	discriminant := b*b - 4*a*c
+	return discriminant >= 0
+}
 func rayColor(r utils.Ray) utils.Vec3 {
+	if HitSphere(r, utils.Vec3{Z: -1}, 0.5) {
+		return utils.Vec3{X: 1}
+	}
+
 	unitDirection := r.Direction.Normalize()
-	a := 0.5 * (unitDirection.Y() + 1.0)
-	white := utils.NewVec3(1.0, 1.0, 1.0)
-	blue := utils.NewVec3(0.5, 0.7, 1.0)
+	a := 0.5 * (unitDirection.Y + 1.0)
+	white := utils.Vec3{X: 1.0, Y: 1.0, Z: 1.0}
+	blue := utils.Vec3{X: 0.5, Y: 0.7, Z: 1.0}
 	return white.TimesConst(1.0 - a).PlusEq(blue.TimesConst(a))
 }
 func main() {
@@ -26,21 +38,17 @@ func main() {
 	focalLength := 1.0
 	viewportHeight := 2.0
 	viewportWidth := viewportHeight * (float64(width) / float64(height))
-	cameraCenter := utils.NewVec3(0, 0, 0)
+	cameraCenter := utils.Vec3{}
 
-	viewportU := utils.NewVec3(viewportWidth, 0, 0)
-	viewportV := utils.NewVec3(0, -viewportHeight, 0)
-
+	viewportU := utils.Vec3{X: viewportWidth}
+	viewportV := utils.Vec3{Y: -viewportHeight}
 	pixelDeltaU := viewportU.TimesConst(1.0 / float64(width))
 	pixelDeltaV := viewportV.TimesConst(1.0 / float64(height))
 
-	viewportUpperLeft := cameraCenter.MinusEq(*utils.NewVec3(0, 0, focalLength))
-	viewportUpperLeft = viewportUpperLeft.MinusEq(viewportU.TimesConst(0.5))
-	viewportUpperLeft = viewportUpperLeft.MinusEq(viewportV.TimesConst(0.5))
+	viewportUpperLeft := cameraCenter.MinusEq(utils.Vec3{Z: focalLength}).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
+	pixel00Loc := pixelDeltaU.PlusEq(pixelDeltaV).TimesConst(0.5).PlusEq(viewportUpperLeft)
 
-	plusConst := viewportUpperLeft.PlusConst(0.5)
-	pixel00Loc := plusConst.TimesEq(pixelDeltaU.PlusEq(pixelDeltaV))
-
+	fmt.Println(pixel00Loc)
 	maxColorValue := 255
 
 	file, err := os.Create("goimage.ppm")
@@ -53,13 +61,12 @@ func main() {
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", width, height, maxColorValue)
 
 	var pixels []byte
-	for i := 0; i < height; i++ {
-		for j := 0; j < width; j++ {
-			eq := pixel00Loc.PlusEq(pixelDeltaU.TimesConst(float64(j)))
-			pixelCenter := eq.PlusEq(pixelDeltaV.TimesConst(float64(i)))
-			rayDirection := pixelCenter.MinusEq(*cameraCenter)
+	for j := 0; j < height; j++ {
+		for i := 0; i < width; i++ {
+			pixelCenter := pixel00Loc.PlusEq(pixelDeltaU.TimesConst(float64(i))).PlusEq(pixelDeltaV.TimesConst(float64(j)))
+			rayDirection := pixelCenter.MinusEq(cameraCenter)
 
-			ray := utils.Ray{Origin: *cameraCenter, Direction: rayDirection}
+			ray := utils.Ray{Origin: cameraCenter, Direction: rayDirection}
 
 			color := rayColor(ray)
 			utils.WriteColor(&pixels, color)
