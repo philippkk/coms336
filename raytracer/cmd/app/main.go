@@ -19,21 +19,15 @@ func main() {
 	}
 	defer file.Close()
 
-	// vec3 testing :)
-	thing := utils.NewVec3(1, 2, 3)
-	thing2 := utils.NewVec3(3, 4, 5)
-	fmt.Println(thing.Cross(thing2))
-
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", width, height, maxColorValue)
+	
 	var pixels []byte
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
-			colors := []byte{
-				byte(float64(j) / float64(width-1) * 255),
-				byte(float64(i) / float64(height-1) * 255),
-				255,
-			}
-			pixels = append(pixels, colors...)
+			color := utils.NewVec3(float64(j)/float64(width-1),
+				float64(i)/float64(height-1),
+				255)
+			utils.WriteColor(&pixels, *color)
 		}
 	}
 
