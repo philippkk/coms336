@@ -9,13 +9,11 @@ import (
 )
 
 func rayColor(r utils.Ray) utils.Vec3 {
-	unitDirection := r.Direction.UnitVector()
+	unitDirection := r.Direction.Normalize()
 	a := 0.5 * (unitDirection.Y() + 1.0)
-
 	white := utils.NewVec3(1.0, 1.0, 1.0)
 	blue := utils.NewVec3(0.5, 0.7, 1.0)
-	timesConst := white.TimesConst(1.0 - a)
-	return timesConst.PlusEq(blue.TimesConst(a))
+	return white.TimesConst(1.0 - a).PlusEq(blue.TimesConst(a))
 }
 func main() {
 	aspectRatio := 16.0 / 9.0
@@ -33,12 +31,12 @@ func main() {
 	viewportU := utils.NewVec3(viewportWidth, 0, 0)
 	viewportV := utils.NewVec3(0, -viewportHeight, 0)
 
-	pixelDeltaU := viewportU.TimesConst(float64(1 / width))
-	pixelDeltaV := viewportV.TimesConst(float64(1 / height))
+	pixelDeltaU := viewportU.TimesConst(1.0 / float64(width))
+	pixelDeltaV := viewportV.TimesConst(1.0 / float64(height))
 
 	viewportUpperLeft := cameraCenter.MinusEq(*utils.NewVec3(0, 0, focalLength))
-	viewportUpperLeft = viewportUpperLeft.MinusEq(viewportU.TimesConst(1.0 / 2.0))
-	viewportUpperLeft = viewportUpperLeft.MinusEq(viewportV.TimesConst(1.0 / 2.0))
+	viewportUpperLeft = viewportUpperLeft.MinusEq(viewportU.TimesConst(0.5))
+	viewportUpperLeft = viewportUpperLeft.MinusEq(viewportV.TimesConst(0.5))
 
 	plusConst := viewportUpperLeft.PlusConst(0.5)
 	pixel00Loc := plusConst.TimesEq(pixelDeltaU.PlusEq(pixelDeltaV))
@@ -61,7 +59,6 @@ func main() {
 			pixelCenter := eq.PlusEq(pixelDeltaV.TimesConst(float64(i)))
 			rayDirection := pixelCenter.MinusEq(*cameraCenter)
 
-			fmt.Println(rayDirection)
 			ray := utils.Ray{Origin: *cameraCenter, Direction: rayDirection}
 
 			color := rayColor(ray)
