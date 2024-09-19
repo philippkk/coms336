@@ -3,22 +3,30 @@ package main
 import (
 	"fmt"
 	"github.com/philippkk/coms336/raytracer/internal/utils"
+	"math"
 	"os"
 	"os/exec"
 	"runtime"
 )
 
-func HitSphere(r utils.Ray, s utils.Vec3, radius float64) bool {
+func HitSphere(r utils.Ray, s utils.Vec3, radius float64) float64 {
 	oc := s.MinusEq(r.Origin)
-	a := r.Direction.Dot(r.Direction)
-	b := 2.0 * oc.Dot(r.Direction)
-	c := oc.Dot(oc) - radius*radius
-	discriminant := b*b - 4*a*c
-	return discriminant >= 0
+	a := r.Direction.LengthSquared()
+	h := r.Direction.Dot(oc)
+	c := oc.LengthSquared() - radius*radius
+	discriminant := h*h - a*c
+
+	if discriminant < 0 {
+		return -1.0
+	} else {
+		return (h - math.Sqrt(discriminant)) / a
+	}
 }
 func rayColor(r utils.Ray) utils.Vec3 {
-	if HitSphere(r, utils.Vec3{Z: -1}, 0.5) {
-		return utils.Vec3{X: 1}
+	t := HitSphere(r, utils.Vec3{Z: -1}, 0.5)
+	if t > 0 {
+		N := r.At(t).MinusEq(utils.Vec3{Z: -1}).UnitVector()
+		return utils.Vec3{X: N.X + 1, Y: N.Y + 1, Z: N.Z + 1}.TimesConst(0.5)
 	}
 
 	unitDirection := r.Direction.Normalize()
@@ -48,7 +56,6 @@ func main() {
 	viewportUpperLeft := cameraCenter.MinusEq(utils.Vec3{Z: focalLength}).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
 	pixel00Loc := pixelDeltaU.PlusEq(pixelDeltaV).TimesConst(0.5).PlusEq(viewportUpperLeft)
 
-	fmt.Println(pixel00Loc)
 	maxColorValue := 255
 
 	file, err := os.Create("goimage.ppm")
@@ -79,6 +86,11 @@ func main() {
 	}
 
 	fmt.Println("Done.")
+
+	test := utils.Sphere{5}
+	test2 := utils.Tri{6}
+	utils.Measure(test)
+	utils.Measure(test2)
 
 	openFile("goimage.ppm")
 }
