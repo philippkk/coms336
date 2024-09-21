@@ -74,10 +74,16 @@ func rayColor(r Ray, depth int, world Hittable) Vec3 {
 	if depth <= 0 {
 		return Vec3{0, 0, 0}
 	}
+
 	var rec HitRecord
+
 	if world.Hit(&r, Interval{0.001, math.Inf(+1)}, &rec) {
-		direction := rec.Normal.PlusEq(RandomUnitVector())
-		return rayColor(Ray{rec.P, direction}, depth-1, world).TimesConst(0.5)
+		var scattered Ray
+		var attenuation Vec3
+		if rec.Mat.Scatter(&r, &scattered, &attenuation, rec) {
+			return rayColor(scattered, depth-1, world).TimesEq(attenuation)
+		}
+		return Vec3{0, 0, 0}
 	}
 
 	unitDirection := r.Direction.Normalize()

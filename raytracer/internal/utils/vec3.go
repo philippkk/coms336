@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -51,7 +50,10 @@ func (v Vec3) Normalize() Vec3 {
 	l := v.Length()
 	return Vec3{v.X / l, v.Y / l, v.Z / l}
 }
-
+func (v Vec3) NearZero() bool {
+	s := 1e-8
+	return (math.Abs(v.X) < s) && (math.Abs(v.Y) < s) && (math.Abs(v.Z) < s)
+}
 func RandomVec3() Vec3 {
 	return Vec3{RandomFloat(), RandomFloat(), RandomFloat()}
 }
@@ -59,17 +61,14 @@ func RandomVec3InRange(min, max float64) Vec3 {
 	return Vec3{RandomFloatInRange(min, max), RandomFloatInRange(min, max), RandomFloatInRange(min, max)}
 }
 func RandomUnitVector() Vec3 {
-	for true {
+	for {
 		p := RandomVec3InRange(-1, 1)
 		lensq := p.LengthSquared()
 		if 1e-160 < lensq && lensq <= 1 {
 			return p.TimesConst(1 / math.Sqrt(lensq))
 		}
 	}
-	fmt.Println("YOOO LOOK AT RANDOM UNIT VECTOR ITS FUCKED UP")
-	return Vec3{0, 0, 0}
 }
-
 func RandomOnHemisphere(normal Vec3) Vec3 {
 	onUnitSphere := RandomUnitVector()
 	if onUnitSphere.Dot(normal) > 0.0 {
@@ -77,4 +76,7 @@ func RandomOnHemisphere(normal Vec3) Vec3 {
 	} else {
 		return onUnitSphere.Neg()
 	}
+}
+func Reflect(v, n Vec3) Vec3 {
+	return v.PlusConst(-2).TimesConst(2).TimesConst(v.Dot(n)).TimesEq(n)
 }

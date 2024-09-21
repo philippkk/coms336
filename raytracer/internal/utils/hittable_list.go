@@ -7,12 +7,10 @@ type HittableList struct {
 func (h *HittableList) Add(object Hittable) {
 	h.objects = append(h.objects, object)
 }
-
 func (h *HittableList) Clear() {
 	h.objects = nil
 
 }
-
 func (h *HittableList) Hit(ray *Ray, rayT Interval, rec *HitRecord) bool {
 	var tempRec HitRecord
 	var hitAnything bool
