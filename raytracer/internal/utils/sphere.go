@@ -1,20 +1,23 @@
 package utils
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Sphere struct {
 	Center Vec3
 	Radius float64
 }
 
-func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec HitRecord) bool {
+func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec *HitRecord) bool {
 	oc := s.Center.MinusEq(ray.Origin)
 	a := ray.Direction.LengthSquared()
 	h := ray.Direction.Dot(oc)
 	c := oc.LengthSquared() - s.Radius*s.Radius
 
 	discriminant := h*h - a*c
-	if discriminant > 0 {
+	if discriminant < 0 {
 		return false
 	}
 
@@ -31,7 +34,8 @@ func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec HitRecord) bool {
 	rec.T = root
 	rec.P = ray.At(rec.T)
 	outwardNormal := (rec.P.MinusEq(s.Center)).TimesConst(1.0 / s.Radius)
+	fmt.Println(outwardNormal)
 	rec.SetFaceNormal(ray, outwardNormal)
-
+	fmt.Println("in method normal", rec.Normal)
 	return true
 }

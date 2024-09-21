@@ -9,23 +9,12 @@ import (
 	"runtime"
 )
 
-func HitSphere(r utils.Ray, s utils.Vec3, radius float64) float64 {
-	oc := s.MinusEq(r.Origin)
-	a := r.Direction.LengthSquared()
-	h := r.Direction.Dot(oc)
-	c := oc.LengthSquared() - radius*radius
-
-	if discriminant := h*h - a*c; discriminant < 0 {
-		return -1.0
-	} else {
-		return (h - math.Sqrt(discriminant)) / a
-	}
-}
-func rayColor(r utils.Ray) utils.Vec3 {
-	t := HitSphere(r, utils.Vec3{Z: -1}, 0.5)
-	if t > 0 {
-		N := r.At(t).MinusEq(utils.Vec3{Z: -1}).UnitVector()
-		return utils.Vec3{X: N.X + 1, Y: N.Y + 1, Z: N.Z + 1}.TimesConst(0.5)
+func rayColor(r utils.Ray, world utils.Hittable) utils.Vec3 {
+	var rec utils.HitRecord
+	if world.Hit(&r, 0, math.Inf(1), &rec) {
+		fmt.Println(rec.Normal)
+		temp := rec.Normal.PlusEq(utils.Vec3{X: 1, Y: 1, Z: 1})
+		return temp.TimesConst(0.5)
 	}
 
 	unitDirection := r.Direction.Normalize()
@@ -41,6 +30,10 @@ func main() {
 	if height < 0 {
 		height = 1
 	}
+
+	var world utils.HittableList
+	world.Add(utils.Sphere{utils.Vec3{0, 0, -1}, 0.5})
+	world.Add(utils.Sphere{utils.Vec3{0, -100.5, -1}, 100})
 
 	focalLength := 1.0
 	viewportHeight := 2.0
@@ -74,7 +67,7 @@ func main() {
 
 			ray := utils.Ray{Origin: cameraCenter, Direction: rayDirection}
 
-			color := rayColor(ray)
+			color := rayColor(ray, &world)
 			utils.WriteColor(&pixels, color)
 		}
 	}

@@ -1,5 +1,7 @@
 package utils
 
+import "fmt"
+
 type HittableList struct {
 	objects []Hittable
 }
@@ -13,16 +15,17 @@ func (h *HittableList) Clear() {
 
 }
 
-func (h *HittableList) Hit(ray *Ray, rayTmin, rayTmax float64, rec HitRecord) bool {
+func (h *HittableList) Hit(ray *Ray, rayTmin, rayTmax float64, rec *HitRecord) bool {
 	var tempRec HitRecord
 	var hitAnything bool
 	closestSoFar := rayTmax
 
 	for _, obj := range h.objects {
-		if obj.Hit(ray, rayTmin, closestSoFar, tempRec) {
+		if obj.Hit(ray, rayTmin, closestSoFar, &tempRec) {
 			hitAnything = true
 			closestSoFar = tempRec.T
-			rec = tempRec
+			*rec = tempRec
+			fmt.Println("in liist", rec)
 		}
 	}
 
