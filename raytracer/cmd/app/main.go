@@ -10,14 +10,15 @@ func main() {
 
 	var world utils.HittableList
 
-	materialGround := materials.Lambertian{utils.Vec3{0.8, 0.8, 0.0}}
-	materialLeft := materials.Metal{utils.Vec3{0.8, 0.8, 0.8}}
+	materialGround := materials.Lambertian{utils.Vec3{0.4, 0.0, 0.7}}
+	materialLeft := materials.Metal{utils.Vec3{0.0, 0.3, 0.7}, 1.0}
+	materialRight := materials.Metal{utils.Vec3{0.8, 0.8, 0.8}, 0.0}
 
 	world.Add(objects.Sphere{utils.Vec3{0, 0, -1}, 0.5, materialGround})
 	world.Add(objects.Sphere{utils.Vec3{1, 0, -1}, 0.2, materialLeft})
 	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.2, materialLeft})
 
-	world.Add(objects.Sphere{utils.Vec3{0, -100.5, -1}, 100, materialLeft})
+	world.Add(objects.Sphere{utils.Vec3{0, -100.5, -1}, 100, materialRight})
 
 	var cam utils.Camera
 	cam.AspectRatio = 16.0 / 9.0

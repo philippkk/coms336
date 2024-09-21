@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"time"
 )
 
 type Camera struct {
@@ -26,9 +27,10 @@ func (c *Camera) Render(world HittableList) {
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
 
 	var pixels []byte
+	t := time.Now()
 	for j := 0; j < c.imageHeight; j++ {
 		fmt.Printf("\033[1A\033[K")
-		fmt.Println("line:", c.imageHeight-j, "IN PROGRESS")
+		fmt.Println("line", c.imageHeight-j, "IN PROGRESS")
 		for i := 0; i < c.ImageWidth; i++ {
 			pixelColor := Vec3{0, 0, 0}
 			for sample := 0; sample < c.SamplesPerPixel; sample++ {
@@ -44,7 +46,9 @@ func (c *Camera) Render(world HittableList) {
 		return
 	}
 
-	fmt.Println("Done.")
+	fmt.Printf("\033[1A\033[K")
+	fmt.Println("Done in:", time.Now().Sub(t), "opening file now bword")
+	fmt.Println("image size:", c.ImageWidth, "x", c.imageHeight)
 
 	openFile("goimage.ppm")
 }
