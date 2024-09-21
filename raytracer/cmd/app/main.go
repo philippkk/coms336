@@ -14,9 +14,8 @@ func HitSphere(r utils.Ray, s utils.Vec3, radius float64) float64 {
 	a := r.Direction.LengthSquared()
 	h := r.Direction.Dot(oc)
 	c := oc.LengthSquared() - radius*radius
-	discriminant := h*h - a*c
 
-	if discriminant < 0 {
+	if discriminant := h*h - a*c; discriminant < 0 {
 		return -1.0
 	} else {
 		return (h - math.Sqrt(discriminant)) / a
@@ -86,11 +85,6 @@ func main() {
 	}
 
 	fmt.Println("Done.")
-
-	test := utils.Sphere{5}
-	test2 := utils.Tri{6}
-	utils.Measure(test)
-	utils.Measure(test2)
 
 	openFile("goimage.ppm")
 }

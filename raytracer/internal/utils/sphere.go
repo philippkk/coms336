@@ -1,33 +1,37 @@
 package utils
 
-import "fmt"
+import "math"
 
 type Sphere struct {
-	Val int
+	Center Vec3
+	Radius float64
 }
 
-func (s Sphere) hit(ray *Ray, rayTmin, rayTmax float64, rec HitRecord) bool {
-	//TODO implement me
-	panic("implement me")
-}
+func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec HitRecord) bool {
+	oc := s.Center.MinusEq(ray.Origin)
+	a := ray.Direction.LengthSquared()
+	h := ray.Direction.Dot(oc)
+	c := oc.LengthSquared() - s.Radius*s.Radius
 
-func (s Sphere) test() int {
-	return s.Val
-}
+	discriminant := h*h - a*c
+	if discriminant > 0 {
+		return false
+	}
 
-type Tri struct {
-	Val int
-}
+	sqrtd := math.Sqrt(discriminant)
 
-func (s Tri) hit(ray *Ray, rayTmin, rayTmax float64, rec HitRecord) bool {
-	//TODO implement me
-	panic("implement me")
-}
+	root := (h - sqrtd) / a
+	if root <= rayTmin || rayTmax <= root {
+		root = (h + sqrtd) / a
+		if root <= rayTmin || rayTmax <= root {
+			return false
+		}
+	}
 
-func (s Tri) test() int {
-	return s.Val
-}
+	rec.T = root
+	rec.P = ray.At(rec.T)
+	outwardNormal := (rec.P.MinusEq(s.Center)).TimesConst(1.0 / s.Radius)
+	rec.SetFaceNormal(ray, outwardNormal)
 
-func Measure(g Hittable) {
-	fmt.Println(g.test())
+	return true
 }
