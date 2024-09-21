@@ -9,8 +9,8 @@ import (
 )
 
 type Camera struct {
-	AspectRatio                                  float64
-	ImageWidth, imageHeight                      int
+	AspectRatio, pixelSamplesScale               float64
+	ImageWidth, imageHeight, SamplesPerPixel     int
 	center, pixel00Loc, pixelDeltaU, pixelDeltaV Vec3
 }
 
@@ -27,14 +27,15 @@ func (c *Camera) Render(world HittableList) {
 
 	var pixels []byte
 	for j := 0; j < c.imageHeight; j++ {
+		fmt.Printf("\033[1A\033[K")
+		fmt.Println("line:", c.imageHeight-j, "IN PROGRESS")
 		for i := 0; i < c.ImageWidth; i++ {
-			pixelCenter := c.pixel00Loc.PlusEq(c.pixelDeltaU.TimesConst(float64(i))).PlusEq(c.pixelDeltaV.TimesConst(float64(j)))
-			rayDirection := pixelCenter.MinusEq(c.center)
-
-			ray := Ray{Origin: c.center, Direction: rayDirection}
-
-			color := rayColor(ray, &world)
-			WriteColor(&pixels, color)
+			pixelColor := Vec3{0, 0, 0}
+			for sample := 0; sample < c.SamplesPerPixel; sample++ {
+				ray := c.getRay(i, j)
+				pixelColor = pixelColor.PlusEq(rayColor(ray, &world))
+			}
+			WriteColor(&pixels, pixelColor.TimesConst(c.pixelSamplesScale))
 		}
 	}
 
@@ -52,6 +53,8 @@ func (c *Camera) initialize() {
 	if c.imageHeight < 0 {
 		c.imageHeight = 1
 	}
+
+	c.pixelSamplesScale = 1.0 / float64(c.SamplesPerPixel)
 	c.center = Vec3{0, 0, 0}
 
 	focalLength := 1.0
@@ -80,7 +83,17 @@ func rayColor(r Ray, world Hittable) Vec3 {
 	blue := Vec3{X: 0.5, Y: 0.7, Z: 1.0}
 	return white.TimesConst(1.0 - a).PlusEq(blue.TimesConst(a))
 }
+func (c *Camera) getRay(i, j int) Ray {
+	offset := sampleSquare()
+	pixelSample := c.pixel00Loc.PlusEq(c.pixelDeltaU.TimesConst(float64(i) + offset.X)).PlusEq(c.pixelDeltaV.TimesConst(float64(j) + offset.Y))
+	rayOrigin := c.center
+	rayDirection := pixelSample.MinusEq(rayOrigin)
 
+	return Ray{rayOrigin, rayDirection}
+}
+func sampleSquare() Vec3 {
+	return Vec3{RandomFloat() - 0.5, RandomFloat() - 0.5, 0}
+}
 func openFile(filename string) {
 	var cmd *exec.Cmd
 

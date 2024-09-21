@@ -1,8 +1,14 @@
 package utils
 
 func WriteColor(pixels *[]byte, color Vec3) {
-	r := int((color.X) * 255.99)
-	g := int((color.Y) * 255.99)
-	b := int((color.Z) * 255.99)
-	*pixels = append(*pixels, byte(r), byte(g), byte(b))
+	r := color.X
+	g := color.Y
+	b := color.Z
+
+	intensity := Interval{0.000, 0.999}
+	rByte := int(256 * intensity.clamp(r))
+	gByte := int(256 * intensity.clamp(g))
+	bByte := int(256 * intensity.clamp(b))
+
+	*pixels = append(*pixels, byte(rByte), byte(gByte), byte(bByte))
 }
