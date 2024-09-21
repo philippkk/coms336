@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -10,7 +9,7 @@ type Sphere struct {
 	Radius float64
 }
 
-func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec *HitRecord) bool {
+func (s Sphere) Hit(ray *Ray, rayT Interval, rec *HitRecord) bool {
 	oc := s.Center.MinusEq(ray.Origin)
 	a := ray.Direction.LengthSquared()
 	h := ray.Direction.Dot(oc)
@@ -24,9 +23,9 @@ func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec *HitRecord) bool {
 	sqrtd := math.Sqrt(discriminant)
 
 	root := (h - sqrtd) / a
-	if root <= rayTmin || rayTmax <= root {
+	if !rayT.surrounds(root) {
 		root = (h + sqrtd) / a
-		if root <= rayTmin || rayTmax <= root {
+		if !rayT.surrounds(root) {
 			return false
 		}
 	}
@@ -34,8 +33,6 @@ func (s Sphere) Hit(ray *Ray, rayTmin, rayTmax float64, rec *HitRecord) bool {
 	rec.T = root
 	rec.P = ray.At(rec.T)
 	outwardNormal := (rec.P.MinusEq(s.Center)).TimesConst(1.0 / s.Radius)
-	fmt.Println(outwardNormal)
 	rec.SetFaceNormal(ray, outwardNormal)
-	fmt.Println("in method normal", rec.Normal)
 	return true
 }
