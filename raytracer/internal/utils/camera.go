@@ -73,8 +73,8 @@ func (c *Camera) initialize() {
 func rayColor(r Ray, world Hittable) Vec3 {
 	var rec HitRecord
 	if world.Hit(&r, Interval{0, math.Inf(+1)}, &rec) {
-		temp := rec.Normal.PlusEq(Vec3{X: 1, Y: 1, Z: 1})
-		return temp.TimesConst(0.5)
+		direction := RandomOnHemisphere(rec.Normal)
+		return rayColor(Ray{rec.P, direction}, world).TimesConst(0.5)
 	}
 
 	unitDirection := r.Direction.Normalize()
