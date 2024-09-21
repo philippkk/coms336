@@ -9,9 +9,9 @@ import (
 )
 
 type Camera struct {
-	AspectRatio, pixelSamplesScale               float64
-	ImageWidth, imageHeight, SamplesPerPixel     int
-	center, pixel00Loc, pixelDeltaU, pixelDeltaV Vec3
+	AspectRatio, pixelSamplesScale                     float64
+	ImageWidth, imageHeight, SamplesPerPixel, MaxDepth int
+	center, pixel00Loc, pixelDeltaU, pixelDeltaV       Vec3
 }
 
 func (c *Camera) Render(world HittableList) {
@@ -33,7 +33,7 @@ func (c *Camera) Render(world HittableList) {
 			pixelColor := Vec3{0, 0, 0}
 			for sample := 0; sample < c.SamplesPerPixel; sample++ {
 				ray := c.getRay(i, j)
-				pixelColor = pixelColor.PlusEq(rayColor(ray, &world))
+				pixelColor = pixelColor.PlusEq(rayColor(ray, c.MaxDepth, &world))
 			}
 			WriteColor(&pixels, pixelColor.TimesConst(c.pixelSamplesScale))
 		}
@@ -70,11 +70,14 @@ func (c *Camera) initialize() {
 	viewportUpperLeft := cameraCenter.MinusEq(Vec3{Z: focalLength}).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
 	c.pixel00Loc = c.pixelDeltaU.PlusEq(c.pixelDeltaV).TimesConst(0.5).PlusEq(viewportUpperLeft)
 }
-func rayColor(r Ray, world Hittable) Vec3 {
+func rayColor(r Ray, depth int, world Hittable) Vec3 {
+	if depth <= 0 {
+		return Vec3{0, 0, 0}
+	}
 	var rec HitRecord
-	if world.Hit(&r, Interval{0, math.Inf(+1)}, &rec) {
-		direction := RandomOnHemisphere(rec.Normal)
-		return rayColor(Ray{rec.P, direction}, world).TimesConst(0.5)
+	if world.Hit(&r, Interval{0.001, math.Inf(+1)}, &rec) {
+		direction := rec.Normal.PlusEq(RandomUnitVector())
+		return rayColor(Ray{rec.P, direction}, depth-1, world).TimesConst(0.5)
 	}
 
 	unitDirection := r.Direction.Normalize()

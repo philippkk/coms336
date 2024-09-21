@@ -17,6 +17,7 @@ func main() {
 	cam.AspectRatio = 16.0 / 9.0
 	cam.ImageWidth = 800
 	cam.SamplesPerPixel = 10
+	cam.MaxDepth = 10
 
 	cam.Render(world)
 }
