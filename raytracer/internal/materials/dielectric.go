@@ -26,7 +26,7 @@ func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 	cannotRefract := ri*sinTheta > 1.0
 	var direction utils.Vec3
 
-	if cannotRefract {
+	if cannotRefract || reflectance(cosTheta, ri) > utils.RandomFloat() {
 		direction = utils.Reflect(unitDirection, rec.Normal)
 	} else {
 		direction = utils.Refract(unitDirection, rec.Normal, ri)
@@ -34,4 +34,10 @@ func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 
 	*scattered = utils.Ray{rec.P, direction}
 	return true
+}
+
+func reflectance(cosine, refractionIndex float64) float64 {
+	r0 := (1 - refractionIndex) / (1 + refractionIndex)
+	r0 = r0 * r0
+	return r0 + (1-r0)*math.Pow(1-cosine, 5)
 }

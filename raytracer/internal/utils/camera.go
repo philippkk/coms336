@@ -10,7 +10,7 @@ import (
 )
 
 type Camera struct {
-	AspectRatio, pixelSamplesScale                     float64
+	AspectRatio, pixelSamplesScale, Vfov               float64
 	ImageWidth, imageHeight, SamplesPerPixel, MaxDepth int
 	center, pixel00Loc, pixelDeltaU, pixelDeltaV       Vec3
 }
@@ -62,7 +62,9 @@ func (c *Camera) initialize() {
 	c.center = Vec3{0, 0, 0}
 
 	focalLength := 1.0
-	viewportHeight := 2.0
+	theta := DegreesToRadians(c.Vfov)
+	h := math.Tan(theta / 2)
+	viewportHeight := 2 * h * focalLength
 	viewportWidth := viewportHeight * (float64(c.ImageWidth) / float64(c.imageHeight))
 	cameraCenter := Vec3{}
 
