@@ -27,14 +27,12 @@ func (c *Camera) Render(world HittableList) {
 
 	t := time.Now()
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
-	// Pre-allocate a slice large enough to hold all the pixel data
-	pixels := make([]byte, c.imageHeight*c.ImageWidth*3) // 3 bytes per pixel (RGB)
+	pixels := make([]byte, c.imageHeight*c.ImageWidth*3)
 
-	numWorkers := 6 // Number of concurrent workers
+	numWorkers := 6
 	rowChannel := make(chan int, c.imageHeight)
 	doneChannel := make(chan bool, numWorkers)
 
-	// Worker function
 	worker := func() {
 		for j := range rowChannel {
 			for i := 0; i < c.ImageWidth; i++ {
@@ -43,7 +41,6 @@ func (c *Camera) Render(world HittableList) {
 					ray := c.getRay(i, j)
 					pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world))
 				}
-				// Calculate the pixel's index in the byte slice
 				pixelIndex := (j*c.ImageWidth + i) * 3
 				WriteColor(pixels, pixelIndex, pixelColor.TimesConst(c.pixelSamplesScale))
 			}
@@ -52,19 +49,14 @@ func (c *Camera) Render(world HittableList) {
 		}
 		doneChannel <- true
 	}
-
-	// Launch workers
 	for w := 0; w < numWorkers; w++ {
 		go worker()
 	}
-
-	// Feed rows to workers
 	for j := 0; j < c.imageHeight; j++ {
 		rowChannel <- j
 	}
 	close(rowChannel)
 
-	// Wait for all workers to finish
 	for w := 0; w < numWorkers; w++ {
 		<-doneChannel
 	}
