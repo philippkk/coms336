@@ -6,7 +6,7 @@ type Lambertian struct {
 	Albedo utils.Vec3
 }
 
-func (l Lambertian) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, rec utils.HitRecord) bool {
+func (l Lambertian) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, rec *utils.HitRecord) bool {
 	scatterDirection := rec.Normal.PlusEq(utils.RandomUnitVector())
 
 	if scatterDirection.NearZero() {

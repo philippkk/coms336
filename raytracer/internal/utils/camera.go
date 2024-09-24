@@ -10,9 +10,10 @@ import (
 )
 
 type Camera struct {
-	AspectRatio, pixelSamplesScale, Vfov               float64
-	ImageWidth, imageHeight, SamplesPerPixel, MaxDepth int
-	center, pixel00Loc, pixelDeltaU, pixelDeltaV       Vec3
+	AspectRatio, pixelSamplesScale, Vfov                                float64
+	ImageWidth, imageHeight, SamplesPerPixel, MaxDepth                  int
+	center, pixel00Loc, pixelDeltaU, pixelDeltaV, LookFrom, LookAt, Vup Vec3
+	u, v, w                                                             Vec3
 }
 
 func (c *Camera) Render(world HittableList) {
@@ -24,21 +25,48 @@ func (c *Camera) Render(world HittableList) {
 	}
 	defer file.Close()
 
-	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
-
-	var pixels []byte
 	t := time.Now()
-	for j := 0; j < c.imageHeight; j++ {
-		fmt.Printf("\033[1A\033[K")
-		fmt.Println("line", c.imageHeight-j, "IN PROGRESS")
-		for i := 0; i < c.ImageWidth; i++ {
-			pixelColor := Vec3{0, 0, 0}
-			for sample := 0; sample < c.SamplesPerPixel; sample++ {
-				ray := c.getRay(i, j)
-				pixelColor = pixelColor.PlusEq(rayColor(ray, c.MaxDepth, &world))
+	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
+	// Pre-allocate a slice large enough to hold all the pixel data
+	pixels := make([]byte, c.imageHeight*c.ImageWidth*3) // 3 bytes per pixel (RGB)
+
+	numWorkers := 6 // Number of concurrent workers
+	rowChannel := make(chan int, c.imageHeight)
+	doneChannel := make(chan bool, numWorkers)
+
+	// Worker function
+	worker := func() {
+		for j := range rowChannel {
+			for i := 0; i < c.ImageWidth; i++ {
+				pixelColor := Vec3{0, 0, 0}
+				for sample := 0; sample < c.SamplesPerPixel; sample++ {
+					ray := c.getRay(i, j)
+					pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world))
+				}
+				// Calculate the pixel's index in the byte slice
+				pixelIndex := (j*c.ImageWidth + i) * 3
+				WriteColor(pixels, pixelIndex, pixelColor.TimesConst(c.pixelSamplesScale))
 			}
-			WriteColor(&pixels, pixelColor.TimesConst(c.pixelSamplesScale))
+			fmt.Printf("\033[1A\033[K")
+			fmt.Println("line", c.imageHeight-j, "IN PROGRESS")
 		}
+		doneChannel <- true
+	}
+
+	// Launch workers
+	for w := 0; w < numWorkers; w++ {
+		go worker()
+	}
+
+	// Feed rows to workers
+	for j := 0; j < c.imageHeight; j++ {
+		rowChannel <- j
+	}
+	close(rowChannel)
+
+	// Wait for all workers to finish
+	for w := 0; w < numWorkers; w++ {
+		<-doneChannel
 	}
 
 	_, err = file.Write(pixels)
@@ -59,35 +87,39 @@ func (c *Camera) initialize() {
 	}
 
 	c.pixelSamplesScale = 1.0 / float64(c.SamplesPerPixel)
-	c.center = Vec3{0, 0, 0}
+	c.center = c.LookFrom
 
-	focalLength := 1.0
+	focalLength := c.LookFrom.MinusEq(c.LookAt).Length()
 	theta := DegreesToRadians(c.Vfov)
 	h := math.Tan(theta / 2)
 	viewportHeight := 2 * h * focalLength
 	viewportWidth := viewportHeight * (float64(c.ImageWidth) / float64(c.imageHeight))
-	cameraCenter := Vec3{}
 
-	viewportU := Vec3{X: viewportWidth}
-	viewportV := Vec3{Y: -viewportHeight}
+	c.w = c.LookFrom.MinusEq(c.LookAt).UnitVector()
+	c.u = c.Vup.Cross(c.w).UnitVector()
+	c.v = c.w.Cross(c.u)
+
+	viewportU := c.u.TimesConst(viewportWidth)
+	viewportV := c.v.Neg().TimesConst(viewportHeight)
+
 	c.pixelDeltaU = viewportU.TimesConst(1.0 / float64(c.ImageWidth))
 	c.pixelDeltaV = viewportV.TimesConst(1.0 / float64(c.imageHeight))
 
-	viewportUpperLeft := cameraCenter.MinusEq(Vec3{Z: focalLength}).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
+	viewportUpperLeft := c.center.MinusEq(c.w.TimesConst(focalLength)).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
 	c.pixel00Loc = c.pixelDeltaU.PlusEq(c.pixelDeltaV).TimesConst(0.5).PlusEq(viewportUpperLeft)
 }
-func rayColor(r Ray, depth int, world Hittable) Vec3 {
+func rayColor(r *Ray, depth int, world Hittable) Vec3 {
 	if depth <= 0 {
 		return Vec3{0, 0, 0}
 	}
 
 	var rec HitRecord
 
-	if world.Hit(&r, Interval{0.001, math.Inf(+1)}, &rec) {
+	if world.Hit(r, Interval{0.001, math.Inf(+1)}, &rec) {
 		var scattered Ray
 		var attenuation Vec3
-		if rec.Mat.Scatter(&r, &scattered, &attenuation, rec) {
-			return rayColor(scattered, depth-1, world).TimesEq(attenuation)
+		if rec.Mat.Scatter(r, &scattered, &attenuation, &rec) {
+			return rayColor(&scattered, depth-1, world).TimesEq(attenuation)
 		}
 		return Vec3{0, 0, 0}
 	}

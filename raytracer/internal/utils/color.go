@@ -8,7 +8,7 @@ func linearToGamma(linearComponent float64) float64 {
 	}
 	return 0
 }
-func WriteColor(pixels *[]byte, color Vec3) {
+func WriteColor(pixels []byte, index int, color Vec3) {
 	r := color.X
 	g := color.Y
 	b := color.Z
@@ -22,5 +22,8 @@ func WriteColor(pixels *[]byte, color Vec3) {
 	gByte := int(256 * intensity.clamp(g))
 	bByte := int(256 * intensity.clamp(b))
 
-	*pixels = append(*pixels, byte(rByte), byte(gByte), byte(bByte))
+	// Directly modify the pre-allocated pixel slice at the specified index
+	pixels[index] = byte(rByte)
+	pixels[index+1] = byte(gByte)
+	pixels[index+2] = byte(bByte)
 }

@@ -78,11 +78,11 @@ func RandomOnHemisphere(normal Vec3) Vec3 {
 	}
 }
 func Reflect(v, n Vec3) Vec3 {
-	return v.PlusConst(-2).TimesConst(2).TimesConst(v.Dot(n)).TimesEq(n)
+	return v.MinusEq(n.TimesConst(v.Dot(n) * 2))
 }
 func Refract(uv, n Vec3, etaiOverEtat float64) Vec3 {
-	cosTheta := min(uv.Neg().Dot(n), 1.0)
-	rOutPerp := uv.PlusConst(cosTheta).TimesEq(n).TimesConst(etaiOverEtat)
+	cosTheta := min(n.Dot(uv.Neg()), 1.0)
+	rOutPerp := uv.PlusEq(n.TimesConst(cosTheta)).TimesConst(etaiOverEtat)
 	rOutParallel := n.TimesConst(-math.Sqrt(math.Abs(1.0 - rOutPerp.LengthSquared())))
 	return rOutPerp.PlusEq(rOutParallel)
 }

@@ -9,8 +9,8 @@ type Dielectric struct {
 	RefractionIndex float64
 }
 
-func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, rec utils.HitRecord) bool {
-	*attenuation = utils.Vec3{1, 1, 1}
+func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, rec *utils.HitRecord) bool {
+	*attenuation = utils.Vec3{X: 1, Y: 1, Z: 1}
 	var ri float64
 	if rec.FrontFace {
 		ri = 1.0 / d.RefractionIndex
@@ -20,7 +20,7 @@ func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 
 	unitDirection := rIn.Direction.UnitVector()
 
-	cosTheta := min(unitDirection.Neg().Dot(rec.Normal), 1.0)
+	cosTheta := min((unitDirection.Neg()).Dot(rec.Normal), 1.0)
 	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
 
 	cannotRefract := ri*sinTheta > 1.0
@@ -32,7 +32,7 @@ func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 		direction = utils.Refract(unitDirection, rec.Normal, ri)
 	}
 
-	*scattered = utils.Ray{rec.P, direction}
+	*scattered = utils.Ray{Origin: rec.P, Direction: direction}
 	return true
 }
 
