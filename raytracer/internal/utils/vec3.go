@@ -46,6 +46,14 @@ func (v Vec3) Cross(v2 Vec3) Vec3 {
 func (v Vec3) UnitVector() Vec3 {
 	return v.TimesConst(1.0 / v.Length())
 }
+func RandomInUnitDisk() Vec3 {
+	for {
+		p := Vec3{X: RandomFloatInRange(-1, 1), Y: RandomFloatInRange(-1, 1)}
+		if p.LengthSquared() < 1 {
+			return p
+		}
+	}
+}
 func (v Vec3) Normalize() Vec3 {
 	l := v.Length()
 	return Vec3{v.X / l, v.Y / l, v.Z / l}
