@@ -22,17 +22,19 @@ func main() {
 	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.4, materialGlass2})
 	//world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.2, materialLeft})
 
-	world.Add(objects.Sphere{utils.Vec3{0, -100.5, -1}, 100, materialGlass})
+	world.Add(objects.Sphere{utils.Vec3{0, -100.5, -1}, 100, materialLeft})
 
 	var cam utils.Camera
 	cam.AspectRatio = 16.0 / 9.0
 	cam.ImageWidth = 2234
-	cam.SamplesPerPixel = 100
+	cam.SamplesPerPixel = 200
 	cam.MaxDepth = 10000
 	cam.Vfov = 30
 	cam.LookFrom = utils.Vec3{-2, 1.5, 1}
 	cam.LookAt = utils.Vec3{Z: -1}
 	cam.Vup = utils.Vec3{Y: 1}
+	cam.DefocusAngle = 0.6
+	cam.Focusdist = 3.4
 
 	cam.Render(world)
 }

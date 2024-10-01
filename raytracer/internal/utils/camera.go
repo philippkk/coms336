@@ -13,7 +13,8 @@ type Camera struct {
 	AspectRatio, pixelSamplesScale, Vfov                                float64
 	ImageWidth, imageHeight, SamplesPerPixel, MaxDepth                  int
 	center, pixel00Loc, pixelDeltaU, pixelDeltaV, LookFrom, LookAt, Vup Vec3
-	u, v, w                                                             Vec3
+	u, v, w, defocusDiskU, defocusDiskV                                 Vec3
+	DefocusAngle, Focusdist                                             float64
 }
 
 func (c *Camera) Render(world HittableList) {
@@ -81,10 +82,9 @@ func (c *Camera) initialize() {
 	c.pixelSamplesScale = 1.0 / float64(c.SamplesPerPixel)
 	c.center = c.LookFrom
 
-	focalLength := c.LookFrom.MinusEq(c.LookAt).Length()
 	theta := DegreesToRadians(c.Vfov)
 	h := math.Tan(theta / 2)
-	viewportHeight := 2 * h * focalLength
+	viewportHeight := 2 * h * c.Focusdist
 	viewportWidth := viewportHeight * (float64(c.ImageWidth) / float64(c.imageHeight))
 
 	c.w = c.LookFrom.MinusEq(c.LookAt).UnitVector()
@@ -97,8 +97,12 @@ func (c *Camera) initialize() {
 	c.pixelDeltaU = viewportU.TimesConst(1.0 / float64(c.ImageWidth))
 	c.pixelDeltaV = viewportV.TimesConst(1.0 / float64(c.imageHeight))
 
-	viewportUpperLeft := c.center.MinusEq(c.w.TimesConst(focalLength)).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
+	viewportUpperLeft := c.center.MinusEq(c.w.TimesConst(c.Focusdist)).MinusEq(viewportU.TimesConst(0.5)).MinusEq(viewportV.TimesConst(0.5))
 	c.pixel00Loc = c.pixelDeltaU.PlusEq(c.pixelDeltaV).TimesConst(0.5).PlusEq(viewportUpperLeft)
+
+	defocusRadius := c.Focusdist * math.Tan(DegreesToRadians(c.DefocusAngle/2))
+	c.defocusDiskU = c.u.TimesConst(defocusRadius)
+	c.defocusDiskV = c.v.TimesConst(defocusRadius)
 }
 func rayColor(r *Ray, depth int, world Hittable) Vec3 {
 	if depth <= 0 {
@@ -122,16 +126,27 @@ func rayColor(r *Ray, depth int, world Hittable) Vec3 {
 	blue := Vec3{X: 0.5, Y: 0.7, Z: 1.0}
 	return white.TimesConst(1.0 - a).PlusEq(blue.TimesConst(a))
 }
+
+// auto ray_origin = (defocus_angle <= 0) ? center : defocus_disk_sample();
 func (c *Camera) getRay(i, j int) Ray {
 	offset := sampleSquare()
 	pixelSample := c.pixel00Loc.PlusEq(c.pixelDeltaU.TimesConst(float64(i) + offset.X)).PlusEq(c.pixelDeltaV.TimesConst(float64(j) + offset.Y))
-	rayOrigin := c.center
+	var rayOrigin Vec3
+	if c.DefocusAngle <= 0 {
+		rayOrigin = c.center
+	} else {
+		rayOrigin = c.defocusDiskSample()
+	}
 	rayDirection := pixelSample.MinusEq(rayOrigin)
 
 	return Ray{rayOrigin, rayDirection}
 }
 func sampleSquare() Vec3 {
 	return Vec3{RandomFloat() - 0.5, RandomFloat() - 0.5, 0}
+}
+func (c *Camera) defocusDiskSample() Vec3 {
+	p := RandomInUnitDisk()
+	return c.center.PlusEq(c.defocusDiskU.TimesConst(p.X)).PlusEq(c.defocusDiskV.TimesConst(p.Y))
 }
 func openFile(filename string) {
 	var cmd *exec.Cmd
