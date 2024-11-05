@@ -22,7 +22,7 @@ type Tile struct {
 	width, height int
 }
 
-func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byte) {
+func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byte) time.Duration {
 	c.initialize()
 	t := time.Now()
 	tileWidth := 32
@@ -148,6 +148,7 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 	close(resultChannel)
 	fmt.Printf("\033[1A\033[K")
 	fmt.Printf("Done in: %v\n", time.Since(t))
+	return time.Since(t)
 }
 
 func (c *Camera) initialize() {

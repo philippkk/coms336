@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+var t time.Duration
+
 func run() {
 	// Your existing main() code goes here
 	// world setup, camera setup, etc.
@@ -24,6 +26,7 @@ func run() {
 	materialRight := materials.Metal{utils.Vec3{0.0, 0.3, 0.7}, 0.0}
 	materialGlass := materials.Dielectric{1.50}
 	materialGlass2 := materials.Dielectric{1.00 / 1.50}
+
 	world.Add(objects.Triangle{
 		utils.Vec3{1, 0, -1.0},
 		utils.Vec3{0, 0, -1.0},
@@ -34,16 +37,13 @@ func run() {
 	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.5, materialGlass})
 	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.4, materialGlass2})
 	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.2, materialLeft})
-	//
 	world.Add(objects.Sphere{utils.Vec3{0, -100.5, -1}, 100, materialRight})
-	//
-	//
 
 	var cam utils.Camera
 	cam.AspectRatio = 16.0 / 9.0
-	cam.ImageWidth = 450 //2234
-	cam.SamplesPerPixel = 1
-	cam.MaxDepth = 10
+	cam.ImageWidth = 1000 //2234
+	cam.SamplesPerPixel = 100
+	cam.MaxDepth = 100
 
 	cam.Vfov = 30
 	cam.LookFrom = utils.Vec3{0, 1, -6}
@@ -70,7 +70,6 @@ func run() {
 	}
 	defer file.Close()
 
-	t := time.Now()
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", cam.ImageWidth, imageHeight, 255)
 	pixels := make([]byte, imageHeight*cam.ImageWidth*3)
 
@@ -87,11 +86,13 @@ func run() {
 		if display.Win.Pressed(pixel.KeyA) {
 			cam.LookFrom.X += 1
 		}
-		cam.Render(world, display, pixels)
+		finishTime := cam.Render(world, display, pixels)
+		if finishTime > t {
+			t = finishTime
+		}
 		display.Win.Update()
 	}
 
-	// Only write the file if we didn't close the window
 	if display.ShouldClose() {
 		_, err = file.Write(pixels)
 		if err != nil {
@@ -99,7 +100,7 @@ func run() {
 		}
 
 		fmt.Printf("\033[1A\033[K")
-		fmt.Printf("Done in: %v\n", time.Since(t))
+		fmt.Printf("Max image time: %v\n", t)
 		fmt.Printf("Image size: %d x %d\n", cam.ImageWidth, imageHeight)
 
 		//openFile("goimage.ppm")

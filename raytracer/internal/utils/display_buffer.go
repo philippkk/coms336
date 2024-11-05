@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/gopxl/pixel/v2"
 	"github.com/gopxl/pixel/v2/backends/opengl"
+	"golang.org/x/image/colornames"
 	"image"
 	"image/color"
 )
@@ -45,7 +46,7 @@ func (d *DisplayBuffer) Refresh() {
 	d.pic = pixel.PictureDataFromImage(d.canvas)
 	sprite := pixel.NewSprite(d.pic, d.pic.Bounds())
 
-	//d.Win.Clear(colornames.Black)
+	d.Win.Clear(colornames.Black)
 	sprite.Draw(d.Win, pixel.IM.Moved(d.Win.Bounds().Center()))
 	d.Win.Update()
 }
