@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"os"
-	"os/exec"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -24,19 +22,9 @@ type Tile struct {
 	width, height int
 }
 
-func (c *Camera) Render(world HittableList, display *DisplayBuffer) {
+func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byte) {
 	c.initialize()
-	file, err := os.Create("goimage.ppm")
-	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return
-	}
-	defer file.Close()
-
 	t := time.Now()
-	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
-	pixels := make([]byte, c.imageHeight*c.ImageWidth*3)
-
 	tileWidth := 32
 	tileHeight := 32
 	numTilesX := (c.ImageWidth + tileWidth - 1) / tileWidth
@@ -60,12 +48,12 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer) {
 			if completed >= int32(totalTiles) || display.ShouldClose() {
 				break
 			}
-			fmt.Printf("\033[1A\033[K")
-			fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
-				float64(completed)/float64(totalTiles)*100,
-				completed, totalTiles)
+			//fmt.Printf("\033[1A\033[K")
+			//fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
+			//	float64(completed)/float64(totalTiles)*100,
+			//	completed, totalTiles)
 
-			// 60fps : )
+			// 60fps
 			display.Refresh()
 			time.Sleep(time.Second / 60)
 		}
@@ -158,20 +146,8 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer) {
 	// Wait for completion
 	wg.Wait()
 	close(resultChannel)
-
-	// Only write the file if we didn't close the window
-	if !display.ShouldClose() {
-		_, err = file.Write(pixels)
-		if err != nil {
-			return
-		}
-
-		fmt.Printf("\033[1A\033[K")
-		fmt.Printf("Done in: %v\n", time.Since(t))
-		fmt.Printf("Image size: %d x %d\n", c.ImageWidth, c.imageHeight)
-
-		//openFile("goimage.ppm")
-	}
+	fmt.Printf("\033[1A\033[K")
+	fmt.Printf("Done in: %v\n", time.Since(t))
 }
 
 func (c *Camera) initialize() {
@@ -248,21 +224,4 @@ func sampleSquare() Vec3 {
 func (c *Camera) defocusDiskSample() Vec3 {
 	p := RandomInUnitDisk()
 	return c.center.PlusEq(c.defocusDiskU.TimesConst(p.X)).PlusEq(c.defocusDiskV.TimesConst(p.Y))
-}
-func openFile(filename string) {
-	var cmd *exec.Cmd
-
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", filename)
-	case "darwin":
-		cmd = exec.Command("open", filename)
-	default:
-		cmd = exec.Command("xdg-open", filename)
-	}
-
-	err := cmd.Start()
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-	}
 }

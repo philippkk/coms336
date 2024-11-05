@@ -2,10 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/gopxl/pixel/v2"
 	"github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/philippkk/coms336/raytracer/internal/materials"
 	"github.com/philippkk/coms336/raytracer/internal/objects"
 	"github.com/philippkk/coms336/raytracer/internal/utils"
+	"os"
+	"os/exec"
+	"runtime"
+	"time"
 )
 
 func run() {
@@ -36,9 +41,9 @@ func run() {
 
 	var cam utils.Camera
 	cam.AspectRatio = 16.0 / 9.0
-	cam.ImageWidth = 1200 //2234
-	cam.SamplesPerPixel = 200
-	cam.MaxDepth = 200
+	cam.ImageWidth = 450 //2234
+	cam.SamplesPerPixel = 1
+	cam.MaxDepth = 10
 
 	cam.Vfov = 30
 	cam.LookFrom = utils.Vec3{0, 1, -6}
@@ -58,12 +63,67 @@ func run() {
 		return
 	}
 
-	cam.Render(world, display)
+	file, err := os.Create("goimage.ppm")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+
+	t := time.Now()
+	fmt.Fprintf(file, "P6\n%d %d\n%d\n", cam.ImageWidth, imageHeight, 255)
+	pixels := make([]byte, imageHeight*cam.ImageWidth*3)
+
 	for !display.Win.Closed() {
+		if display.Win.Pressed(pixel.KeyW) {
+			cam.LookFrom.Z += 1
+		}
+		if display.Win.Pressed(pixel.KeyS) {
+			cam.LookFrom.Z -= 1
+		}
+		if display.Win.Pressed(pixel.KeyD) {
+			cam.LookFrom.X -= 1
+		}
+		if display.Win.Pressed(pixel.KeyA) {
+			cam.LookFrom.X += 1
+		}
+		cam.Render(world, display, pixels)
 		display.Win.Update()
+	}
+
+	// Only write the file if we didn't close the window
+	if display.ShouldClose() {
+		_, err = file.Write(pixels)
+		if err != nil {
+			return
+		}
+
+		fmt.Printf("\033[1A\033[K")
+		fmt.Printf("Done in: %v\n", time.Since(t))
+		fmt.Printf("Image size: %d x %d\n", cam.ImageWidth, imageHeight)
+
+		//openFile("goimage.ppm")
 	}
 
 }
 func main() {
 	opengl.Run(run)
+}
+
+func openFile(filename string) {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", filename)
+	case "darwin":
+		cmd = exec.Command("open", filename)
+	default:
+		cmd = exec.Command("xdg-open", filename)
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+	}
 }
