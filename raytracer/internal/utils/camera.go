@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -15,6 +17,10 @@ type Camera struct {
 	center, pixel00Loc, pixelDeltaU, pixelDeltaV, LookFrom, LookAt, Vup Vec3
 	u, v, w, defocusDiskU, defocusDiskV                                 Vec3
 	DefocusAngle, Focusdist                                             float64
+}
+type Tile struct {
+	x, y          int // Top-left corner
+	width, height int
 }
 
 func (c *Camera) Render(world HittableList) {
@@ -30,46 +36,127 @@ func (c *Camera) Render(world HittableList) {
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
 	pixels := make([]byte, c.imageHeight*c.ImageWidth*3)
 
-	numWorkers := 6
-	rowChannel := make(chan int, c.imageHeight)
-	doneChannel := make(chan bool, numWorkers)
+	// Define tile size - adjust these based on your scene complexity and cache size
+	tileWidth := 64
+	tileHeight := 64
 
-	worker := func() {
-		for j := range rowChannel {
-			for i := 0; i < c.ImageWidth; i++ {
-				pixelColor := Vec3{0, 0, 0}
-				for sample := 0; sample < c.SamplesPerPixel; sample++ {
-					ray := c.getRay(i, j)
-					pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world))
-				}
-				pixelIndex := (j*c.ImageWidth + i) * 3
-				WriteColor(pixels, pixelIndex, pixelColor.TimesConst(c.pixelSamplesScale))
+	// Calculate number of tiles
+	numTilesX := (c.ImageWidth + tileWidth - 1) / tileWidth
+	numTilesY := (c.imageHeight + tileHeight - 1) / tileHeight
+	totalTiles := numTilesX * numTilesY
+
+	// Create tile channel
+	tileChannel := make(chan Tile, totalTiles)
+	resultChannel := make(chan struct {
+		tile  Tile
+		color []byte
+	}, totalTiles)
+
+	// Use number of CPU cores plus a small buffer
+	numWorkers := runtime.NumCPU() + 2
+
+	var wg sync.WaitGroup
+	var completedTiles atomic.Int32
+
+	// Progress reporting goroutine
+	go func() {
+		for {
+			completed := completedTiles.Load()
+			if completed >= int32(totalTiles) {
+				break
 			}
 			fmt.Printf("\033[1A\033[K")
-			fmt.Println("line", c.imageHeight-j, "IN PROGRESS")
+			fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
+				float64(completed)/float64(totalTiles)*100,
+				completed, totalTiles)
+			time.Sleep(100 * time.Millisecond)
 		}
-		doneChannel <- true
-	}
-	for w := 0; w < numWorkers; w++ {
-		go worker()
-	}
-	for j := 0; j < c.imageHeight; j++ {
-		rowChannel <- j
-	}
-	close(rowChannel)
+	}()
 
-	for w := 0; w < numWorkers; w++ {
-		<-doneChannel
+	// Worker function
+	worker := func(id int) {
+		defer wg.Done()
+
+		for tile := range tileChannel {
+			// Calculate actual tile dimensions (handling edge cases)
+			effectiveWidth := min(tileWidth, c.ImageWidth-tile.x)
+			effectiveHeight := min(tileHeight, c.imageHeight-tile.y)
+
+			// Pre-allocate buffer for this tile
+			tileBuffer := make([]byte, effectiveWidth*effectiveHeight*3)
+
+			// Process tile
+			for dy := 0; dy < effectiveHeight; dy++ {
+				for dx := 0; dx < effectiveWidth; dx++ {
+					x := tile.x + dx
+					y := tile.y + dy
+
+					pixelColor := Vec3{0, 0, 0}
+					for sample := 0; sample < c.SamplesPerPixel; sample++ {
+						ray := c.getRay(x, y)
+						pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world))
+					}
+
+					pixelIndex := (dy*effectiveWidth + dx) * 3
+					WriteColor(tileBuffer, pixelIndex, pixelColor.TimesConst(c.pixelSamplesScale))
+				}
+			}
+
+			resultChannel <- struct {
+				tile  Tile
+				color []byte
+			}{tile, tileBuffer}
+
+			completedTiles.Add(1)
+		}
 	}
 
+	// Start workers
+	wg.Add(numWorkers)
+	for w := 0; w < numWorkers; w++ {
+		go worker(w)
+	}
+
+	// Generate tiles
+	go func() {
+		for ty := 0; ty < c.imageHeight; ty += tileHeight {
+			for tx := 0; tx < c.ImageWidth; tx += tileWidth {
+				tileChannel <- Tile{
+					x:      tx,
+					y:      ty,
+					width:  min(tileWidth, c.ImageWidth-tx),
+					height: min(tileHeight, c.imageHeight-ty),
+				}
+			}
+		}
+		close(tileChannel)
+	}()
+
+	// Collect results
+	go func() {
+		for result := range resultChannel {
+			// Copy tile data to main pixel buffer
+			for y := 0; y < result.tile.height; y++ {
+				srcOffset := y * result.tile.width * 3
+				dstOffset := ((result.tile.y+y)*c.ImageWidth + result.tile.x) * 3
+				copy(pixels[dstOffset:], result.color[srcOffset:srcOffset+result.tile.width*3])
+			}
+		}
+	}()
+
+	// Wait for completion
+	wg.Wait()
+	close(resultChannel)
+
+	// Write final image
 	_, err = file.Write(pixels)
 	if err != nil {
 		return
 	}
 
 	fmt.Printf("\033[1A\033[K")
-	fmt.Println("Done in:", time.Now().Sub(t), "opening file now bword")
-	fmt.Println("image size:", c.ImageWidth, "x", c.imageHeight)
+	fmt.Printf("Done in: %v\n", time.Since(t))
+	fmt.Printf("Image size: %d x %d\n", c.ImageWidth, c.imageHeight)
 
 	openFile("goimage.ppm")
 }
