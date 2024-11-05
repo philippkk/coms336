@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"os"
 	"os/exec"
@@ -23,7 +24,7 @@ type Tile struct {
 	width, height int
 }
 
-func (c *Camera) Render(world HittableList) {
+func (c *Camera) Render(world HittableList, display *DisplayBuffer) {
 	c.initialize()
 	file, err := os.Create("goimage.ppm")
 	if err != nil {
@@ -36,58 +37,54 @@ func (c *Camera) Render(world HittableList) {
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", c.ImageWidth, c.imageHeight, 255)
 	pixels := make([]byte, c.imageHeight*c.ImageWidth*3)
 
-	// Define tile size - adjust these based on your scene complexity and cache size
-	tileWidth := 64
-	tileHeight := 64
-
-	// Calculate number of tiles
+	tileWidth := 32
+	tileHeight := 32
 	numTilesX := (c.ImageWidth + tileWidth - 1) / tileWidth
 	numTilesY := (c.imageHeight + tileHeight - 1) / tileHeight
 	totalTiles := numTilesX * numTilesY
 
-	// Create tile channel
 	tileChannel := make(chan Tile, totalTiles)
 	resultChannel := make(chan struct {
 		tile  Tile
 		color []byte
 	}, totalTiles)
 
-	// Use number of CPU cores plus a small buffer
 	numWorkers := runtime.NumCPU() + 2
-
 	var wg sync.WaitGroup
 	var completedTiles atomic.Int32
 
-	// Progress reporting goroutine
+	// Modified progress reporting goroutine with display updates
 	go func() {
 		for {
 			completed := completedTiles.Load()
-			if completed >= int32(totalTiles) {
+			if completed >= int32(totalTiles) || display.ShouldClose() {
 				break
 			}
 			fmt.Printf("\033[1A\033[K")
 			fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
 				float64(completed)/float64(totalTiles)*100,
 				completed, totalTiles)
-			time.Sleep(100 * time.Millisecond)
+
+			// 60fps : )
+			display.Refresh()
+			time.Sleep(time.Second / 60)
 		}
 	}()
 
-	// Worker function
+	// Worker function remains mostly the same
 	worker := func(id int) {
 		defer wg.Done()
 
 		for tile := range tileChannel {
-			// Calculate actual tile dimensions (handling edge cases)
 			effectiveWidth := min(tileWidth, c.ImageWidth-tile.x)
 			effectiveHeight := min(tileHeight, c.imageHeight-tile.y)
-
-			// Pre-allocate buffer for this tile
 			tileBuffer := make([]byte, effectiveWidth*effectiveHeight*3)
 
-			// Process tile
 			for dy := 0; dy < effectiveHeight; dy++ {
 				for dx := 0; dx < effectiveWidth; dx++ {
+					if display.ShouldClose() {
+						return
+					}
 					x := tile.x + dx
 					y := tile.y + dy
 
@@ -97,8 +94,18 @@ func (c *Camera) Render(world HittableList) {
 						pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world))
 					}
 
+					finalColor := pixelColor.TimesConst(c.pixelSamplesScale)
 					pixelIndex := (dy*effectiveWidth + dx) * 3
-					WriteColor(tileBuffer, pixelIndex, pixelColor.TimesConst(c.pixelSamplesScale))
+					WriteColor(tileBuffer, pixelIndex, finalColor)
+
+					// Update display buffer
+					intensity := Interval{0.000, 0.999}
+					display.UpdatePixel(x, y, color.RGBA{
+						R: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.X)))),
+						G: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.Y)))),
+						B: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.Z)))),
+						A: 255,
+					})
 				}
 			}
 
@@ -121,6 +128,10 @@ func (c *Camera) Render(world HittableList) {
 	go func() {
 		for ty := 0; ty < c.imageHeight; ty += tileHeight {
 			for tx := 0; tx < c.ImageWidth; tx += tileWidth {
+				if display.ShouldClose() {
+					close(tileChannel)
+					return
+				}
 				tileChannel <- Tile{
 					x:      tx,
 					y:      ty,
@@ -148,18 +159,21 @@ func (c *Camera) Render(world HittableList) {
 	wg.Wait()
 	close(resultChannel)
 
-	// Write final image
-	_, err = file.Write(pixels)
-	if err != nil {
-		return
+	// Only write the file if we didn't close the window
+	if !display.ShouldClose() {
+		_, err = file.Write(pixels)
+		if err != nil {
+			return
+		}
+
+		fmt.Printf("\033[1A\033[K")
+		fmt.Printf("Done in: %v\n", time.Since(t))
+		fmt.Printf("Image size: %d x %d\n", c.ImageWidth, c.imageHeight)
+
+		//openFile("goimage.ppm")
 	}
-
-	fmt.Printf("\033[1A\033[K")
-	fmt.Printf("Done in: %v\n", time.Since(t))
-	fmt.Printf("Image size: %d x %d\n", c.ImageWidth, c.imageHeight)
-
-	openFile("goimage.ppm")
 }
+
 func (c *Camera) initialize() {
 	c.imageHeight = int(float64(c.ImageWidth) / c.AspectRatio)
 	if c.imageHeight < 0 {
