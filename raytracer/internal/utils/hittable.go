@@ -17,5 +17,6 @@ func (h *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
 }
 
 type Hittable interface {
+	BoundingBox() AABB
 	Hit(ray *Ray, rayT Interval, rec *HitRecord) bool
 }

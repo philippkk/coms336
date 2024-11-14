@@ -8,6 +8,16 @@ type Vec3 struct {
 	X, Y, Z float64
 }
 
+func (v Vec3) Get(n int) float64 {
+	if n == 1 {
+		return v.Y
+	}
+	if n == 2 {
+		return v.Z
+	}
+	return v.X
+}
+
 func (v Vec3) Neg() Vec3 {
 	return Vec3{-v.X, -v.Y, -v.Z}
 }

@@ -9,3 +9,4 @@ type Ray struct {
 func (r *Ray) At(t float64) Vec3 {
 	return r.Origin.PlusEq(r.Direction.TimesConst(t))
 }
+

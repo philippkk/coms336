@@ -10,8 +10,19 @@ type Sphere struct {
 	Center utils.Ray
 	Radius float64
 	Mat    utils.Material
+	Bbox   utils.AABB
 }
 
+func CreateSphere(Center utils.Ray, Radius float64, Mat utils.Material) Sphere {
+	rvec := utils.Vec3{X: Radius, Y: Radius, Z: Radius}
+	box1 := utils.NewAABBFromPoints(Center.At(0).MinusEq(rvec), Center.At(0).PlusEq(rvec))
+	box2 := utils.NewAABBFromPoints(Center.At(1).MinusEq(rvec), Center.At(1).PlusEq(rvec))
+	bbox := utils.SurroundingBox(box1, box2)
+	return Sphere{Center, Radius, Mat, bbox}
+}
+func (s Sphere) BoundingBox() utils.AABB {
+	return s.Bbox
+}
 func (s Sphere) Hit(ray *utils.Ray, rayT utils.Interval, rec *utils.HitRecord) bool {
 	currentCenter := s.Center.At(ray.Tm)
 	oc := currentCenter.MinusEq(ray.Origin)

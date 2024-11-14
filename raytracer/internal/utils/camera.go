@@ -41,7 +41,7 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 	var wg sync.WaitGroup
 	var completedTiles atomic.Int32
 
-	displayWidth, displayHeight := display.Win.Bounds().Max.XY()
+	//displayWidth, displayHeight := display.Win.Bounds().Max.XY()
 
 	go func() {
 		for {
@@ -89,9 +89,9 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 
 					// todo: need to figure out size of the window in relation to
 					// 		the rendering to update enough pixels (scale up
-					xRatio := displayWidth / float64(c.ImageWidth)
-					yRatio := displayHeight / float64(c.imageHeight)
-					fmt.Printf("x: %v y: %v \n", xRatio, yRatio)
+					//xRatio := displayWidth / float64(c.ImageWidth)
+					//yRatio := displayHeight / float64(c.imageHeight)
+					//fmt.Printf("x: %v y: %v \n", xRatio, yRatio)
 					//todo: i think i need to do some mapping sorta thing,
 					// 		for each dydx, i need another double for loop
 					//		to loop over each pixel to match the ratio

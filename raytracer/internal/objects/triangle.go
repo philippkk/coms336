@@ -8,6 +8,11 @@ import (
 type Triangle struct {
 	V0, V1, V2 utils.Vec3 // Vertices of the triangle
 	Mat        utils.Material
+	Box        utils.AABB
+}
+
+func (t Triangle) BoundingBox() utils.AABB {
+	return t.Box
 }
 
 func (t Triangle) Hit(ray *utils.Ray, rayT utils.Interval, rec *utils.HitRecord) bool {

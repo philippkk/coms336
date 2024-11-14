@@ -1,14 +1,24 @@
 package utils
 
 type HittableList struct {
-	objects []Hittable
+	Objects []Hittable
+	Box     AABB
+}
+
+func (h *HittableList) GetSize() int {
+	return len(h.Objects)
+}
+
+func (h *HittableList) BoundingBox() AABB {
+	return h.Box
 }
 
 func (h *HittableList) Add(object Hittable) {
-	h.objects = append(h.objects, object)
+	h.Objects = append(h.Objects, object)
+	h.Box = SurroundingBox(h.Box, object.BoundingBox())
 }
 func (h *HittableList) Clear() {
-	h.objects = nil
+	h.Objects = nil
 
 }
 func (h *HittableList) Hit(ray *Ray, rayT Interval, rec *HitRecord) bool {
@@ -16,7 +26,7 @@ func (h *HittableList) Hit(ray *Ray, rayT Interval, rec *HitRecord) bool {
 	var hitAnything bool
 	closestSoFar := rayT.Max
 
-	for _, obj := range h.objects {
+	for _, obj := range h.Objects {
 		if obj.Hit(ray, Interval{rayT.Min, closestSoFar}, &tempRec) {
 			hitAnything = true
 			closestSoFar = tempRec.T

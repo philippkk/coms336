@@ -22,26 +22,65 @@ func run() {
 
 	//materialGround := materials.Lambertian{utils.Vec3{0.07, 0.2, 0.05}}
 	materialLeft := materials.Lambertian{utils.Vec3{0.0, 0.3, 0.7}}
-	materialLeft2 := materials.Lambertian{utils.Vec3{0.7, 0.0, 0.0}}
+	//materialLeft2 := materials.Lambertian{utils.Vec3{0.7, 0.0, 0.0}}
 	materialRight := materials.Metal{utils.Vec3{0.0, 0.3, 0.7}, 0.0}
 	materialGlass := materials.Dielectric{1.50}
 	materialGlass2 := materials.Dielectric{1.00 / 1.50}
 
-	world.Add(objects.Triangle{
-		utils.Vec3{1, 0, -1.0},
-		utils.Vec3{0, 0, -1.0},
-		utils.Vec3{0, 0.5, 0},
-		materialLeft2})
-	//world.Add(objects.Sphere{utils.Ray{utils.Vec3{2, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 1, materialGlass})
-	world.Add(objects.Sphere{utils.Ray{utils.Vec3{2, 0, -1}, utils.Vec3{0, -0.2, 0}, 0}, 0.5, materialRight})
-	world.Add(objects.Sphere{utils.Ray{utils.Vec3{-1, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 0.5, materialGlass})
-	world.Add(objects.Sphere{utils.Ray{utils.Vec3{-1, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 0.4, materialGlass2})
-	world.Add(objects.Sphere{utils.Ray{utils.Vec3{-1, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 0.2, materialLeft})
-	world.Add(objects.Sphere{utils.Ray{utils.Vec3{0, -100.5, -1}, utils.Vec3{0, 0, 0}, 0}, 100, materialRight})
+	//world.Add(objects.Triangle{
+	//	utils.Vec3{1, 0, -1.0},
+	//	utils.Vec3{0, 0, -1.0},
+	//	utils.Vec3{0, 0.5, 0},
+	//	materialLeft2})
+	//
+	world.Add(
+		objects.CreateSphere(
+			utils.Ray{utils.Vec3{2, 0, -1},
+				utils.Vec3{0, 0, 0}, 0},
+			1,
+			materialGlass))
+
+	world.Add(
+		objects.CreateSphere(
+			utils.Ray{utils.Vec3{2, 0, -1},
+				utils.Vec3{0, -0.2, 0}, 0},
+			0.5,
+			materialRight))
+
+	world.Add(
+		objects.CreateSphere(
+			utils.Ray{utils.Vec3{-1, 0, -1},
+				utils.Vec3{0, 0, 0}, 0},
+			0.5,
+			materialGlass))
+
+	world.Add(
+		objects.CreateSphere(
+			utils.Ray{utils.Vec3{-1, 0, -1},
+				utils.Vec3{0, 0, 0}, 0},
+			0.4,
+			materialGlass2))
+
+	world.Add(
+		objects.CreateSphere(
+			utils.Ray{utils.Vec3{-1, 0, -1},
+				utils.Vec3{0, 0, 0}, 0},
+			0.2,
+			materialLeft))
+
+	world.Add(
+		objects.CreateSphere(
+			utils.Ray{utils.Vec3{0, -100.5, -1},
+				utils.Vec3{0, 0, 0}, 0},
+			100,
+			materialRight))
+
+	bvhRoot := utils.NewBVHNode(world.Objects, 0, len(world.Objects))
+	world = utils.HittableList{Objects: []utils.Hittable{bvhRoot}}
 
 	var cam utils.Camera
 	cam.AspectRatio = 16.0 / 9.0
-	cam.ImageWidth = 800 //2234
+	cam.ImageWidth = 1000 //2234
 	cam.SamplesPerPixel = 100
 	cam.MaxDepth = 100
 
