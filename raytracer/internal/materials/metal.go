@@ -10,7 +10,7 @@ type Metal struct {
 func (m Metal) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, rec *utils.HitRecord) bool {
 	reflected := utils.Reflect(rIn.Direction, rec.Normal)
 	reflected = reflected.UnitVector().PlusEq(utils.RandomUnitVector().TimesConst(m.Fuzz))
-	*scattered = utils.Ray{Origin: rec.P, Direction: reflected}
+	*scattered = utils.Ray{Origin: rec.P, Direction: reflected, Tm: rIn.Tm}
 	*attenuation = m.Albedo
 	return scattered.Direction.Dot(rec.Normal) > 0
 }

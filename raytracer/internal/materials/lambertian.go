@@ -13,7 +13,7 @@ func (l Lambertian) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 		scatterDirection = rec.Normal
 	}
 
-	*scattered = utils.Ray{Origin: rec.P, Direction: scatterDirection}
+	*scattered = utils.Ray{Origin: rec.P, Direction: scatterDirection, Tm: rIn.Tm}
 	*attenuation = l.Albedo
 	return true
 }

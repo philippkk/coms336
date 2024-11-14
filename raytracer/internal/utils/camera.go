@@ -41,13 +41,15 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 	var wg sync.WaitGroup
 	var completedTiles atomic.Int32
 
-	// Modified progress reporting goroutine with display updates
+	displayWidth, displayHeight := display.Win.Bounds().Max.XY()
+
 	go func() {
 		for {
 			completed := completedTiles.Load()
 			if completed >= int32(totalTiles) || display.ShouldClose() {
 				break
 			}
+
 			//fmt.Printf("\033[1A\033[K")
 			//fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
 			//	float64(completed)/float64(totalTiles)*100,
@@ -59,7 +61,6 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 		}
 	}()
 
-	// Worker function remains mostly the same
 	worker := func(id int) {
 		defer wg.Done()
 
@@ -86,6 +87,16 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 					pixelIndex := (dy*effectiveWidth + dx) * 3
 					WriteColor(tileBuffer, pixelIndex, finalColor)
 
+					// todo: need to figure out size of the window in relation to
+					// 		the rendering to update enough pixels (scale up
+					xRatio := displayWidth / float64(c.ImageWidth)
+					yRatio := displayHeight / float64(c.imageHeight)
+					fmt.Printf("x: %v y: %v \n", xRatio, yRatio)
+					//todo: i think i need to do some mapping sorta thing,
+					// 		for each dydx, i need another double for loop
+					//		to loop over each pixel to match the ratio
+					// 		its going to be weird since the image is in the middle
+
 					// Update display buffer
 					intensity := Interval{0.000, 0.999}
 					display.UpdatePixel(x, y, color.RGBA{
@@ -106,13 +117,11 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 		}
 	}
 
-	// Start workers
 	wg.Add(numWorkers)
 	for w := 0; w < numWorkers; w++ {
 		go worker(w)
 	}
 
-	// Generate tiles
 	go func() {
 		for ty := 0; ty < c.imageHeight; ty += tileHeight {
 			for tx := 0; tx < c.ImageWidth; tx += tileWidth {
@@ -131,10 +140,8 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 		close(tileChannel)
 	}()
 
-	// Collect results
 	go func() {
 		for result := range resultChannel {
-			// Copy tile data to main pixel buffer
 			for y := 0; y < result.tile.height; y++ {
 				srcOffset := y * result.tile.width * 3
 				dstOffset := ((result.tile.y+y)*c.ImageWidth + result.tile.x) * 3
@@ -143,7 +150,6 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 		}
 	}()
 
-	// Wait for completion
 	wg.Wait()
 	close(resultChannel)
 	fmt.Printf("\033[1A\033[K")
@@ -205,7 +211,6 @@ func rayColor(r *Ray, depth int, world Hittable) Vec3 {
 	return white.TimesConst(1.0 - a).PlusEq(blue.TimesConst(a))
 }
 
-// auto ray_origin = (defocus_angle <= 0) ? center : defocus_disk_sample();
 func (c *Camera) getRay(i, j int) Ray {
 	offset := sampleSquare()
 	pixelSample := c.pixel00Loc.PlusEq(c.pixelDeltaU.TimesConst(float64(i) + offset.X)).PlusEq(c.pixelDeltaV.TimesConst(float64(j) + offset.Y))
@@ -216,8 +221,9 @@ func (c *Camera) getRay(i, j int) Ray {
 		rayOrigin = c.defocusDiskSample()
 	}
 	rayDirection := pixelSample.MinusEq(rayOrigin)
+	rayTime := RandomFloat()
 
-	return Ray{rayOrigin, rayDirection}
+	return Ray{rayOrigin, rayDirection, rayTime}
 }
 func sampleSquare() Vec3 {
 	return Vec3{RandomFloat() - 0.5, RandomFloat() - 0.5, 0}

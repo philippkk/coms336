@@ -32,16 +32,16 @@ func run() {
 		utils.Vec3{0, 0, -1.0},
 		utils.Vec3{0, 0.5, 0},
 		materialLeft2})
-	world.Add(objects.Sphere{utils.Vec3{2, 0, -1}, 1, materialGlass})
-	world.Add(objects.Sphere{utils.Vec3{2, 0, -1}, 0.5, materialRight})
-	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.5, materialGlass})
-	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.4, materialGlass2})
-	world.Add(objects.Sphere{utils.Vec3{-1, 0, -1}, 0.2, materialLeft})
-	world.Add(objects.Sphere{utils.Vec3{0, -100.5, -1}, 100, materialRight})
+	//world.Add(objects.Sphere{utils.Ray{utils.Vec3{2, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 1, materialGlass})
+	world.Add(objects.Sphere{utils.Ray{utils.Vec3{2, 0, -1}, utils.Vec3{0, -0.2, 0}, 0}, 0.5, materialRight})
+	world.Add(objects.Sphere{utils.Ray{utils.Vec3{-1, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 0.5, materialGlass})
+	world.Add(objects.Sphere{utils.Ray{utils.Vec3{-1, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 0.4, materialGlass2})
+	world.Add(objects.Sphere{utils.Ray{utils.Vec3{-1, 0, -1}, utils.Vec3{0, 0, 0}, 0}, 0.2, materialLeft})
+	world.Add(objects.Sphere{utils.Ray{utils.Vec3{0, -100.5, -1}, utils.Vec3{0, 0, 0}, 0}, 100, materialRight})
 
 	var cam utils.Camera
 	cam.AspectRatio = 16.0 / 9.0
-	cam.ImageWidth = 1000 //2234
+	cam.ImageWidth = 800 //2234
 	cam.SamplesPerPixel = 100
 	cam.MaxDepth = 100
 
@@ -93,6 +93,9 @@ func run() {
 		display.Win.Update()
 	}
 
+	/*
+		todo: seems to write after the first worker finished instead of the last
+	*/
 	if display.ShouldClose() {
 		_, err = file.Write(pixels)
 		if err != nil {

@@ -18,9 +18,13 @@ type DisplayBuffer struct {
 // NewDisplayBuffer creates a new window for displaying the raytracer output
 func NewDisplayBuffer(width, height int) (*DisplayBuffer, error) {
 	cfg := opengl.WindowConfig{
-		Title:  "cool raytracer",
-		Bounds: pixel.R(0, 0, float64(width), float64(height)),
-		VSync:  true,
+		Title:                  "cool raytracer",
+		Bounds:                 pixel.R(0, 0, float64(width), float64(height)),
+		VSync:                  true,
+		Resizable:              true,
+		TransparentFramebuffer: true,
+		//Maximized: true,
+		//Undecorated: true,
 	}
 
 	win, err := opengl.NewWindow(cfg)
@@ -30,7 +34,7 @@ func NewDisplayBuffer(width, height int) (*DisplayBuffer, error) {
 
 	canvas := image.NewRGBA(image.Rect(0, 0, width, height))
 	pic := pixel.PictureDataFromImage(canvas)
-	win.SetSmooth(true)
+
 	return &DisplayBuffer{
 		Win:    win,
 		canvas: canvas,

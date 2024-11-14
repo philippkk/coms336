@@ -32,7 +32,7 @@ func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 		direction = utils.Refract(unitDirection, rec.Normal, ri)
 	}
 
-	*scattered = utils.Ray{Origin: rec.P, Direction: direction}
+	*scattered = utils.Ray{Origin: rec.P, Direction: direction, Tm: rIn.Tm}
 	return true
 }
 

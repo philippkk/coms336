@@ -5,14 +5,16 @@ import (
 	"math"
 )
 
+// Moving sphere is center1, center2 - center1, 0 time
 type Sphere struct {
-	Center utils.Vec3
+	Center utils.Ray
 	Radius float64
 	Mat    utils.Material
 }
 
 func (s Sphere) Hit(ray *utils.Ray, rayT utils.Interval, rec *utils.HitRecord) bool {
-	oc := s.Center.MinusEq(ray.Origin)
+	currentCenter := s.Center.At(ray.Tm)
+	oc := currentCenter.MinusEq(ray.Origin)
 	a := ray.Direction.LengthSquared()
 	h := ray.Direction.Dot(oc)
 	c := oc.LengthSquared() - s.Radius*s.Radius
@@ -34,7 +36,7 @@ func (s Sphere) Hit(ray *utils.Ray, rayT utils.Interval, rec *utils.HitRecord) b
 
 	rec.T = root
 	rec.P = ray.At(rec.T)
-	outwardNormal := (rec.P.MinusEq(s.Center)).TimesConst(1.0 / s.Radius)
+	outwardNormal := (rec.P.MinusEq(currentCenter)).TimesConst(1.0 / s.Radius)
 	rec.SetFaceNormal(ray, outwardNormal)
 	rec.Mat = s.Mat
 
