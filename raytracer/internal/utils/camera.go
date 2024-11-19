@@ -87,17 +87,6 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 					pixelIndex := (dy*effectiveWidth + dx) * 3
 					WriteColor(tileBuffer, pixelIndex, finalColor)
 
-					// todo: need to figure out size of the window in relation to
-					// 		the rendering to update enough pixels (scale up
-					//xRatio := displayWidth / float64(c.ImageWidth)
-					//yRatio := displayHeight / float64(c.imageHeight)
-					//fmt.Printf("x: %v y: %v \n", xRatio, yRatio)
-					//todo: i think i need to do some mapping sorta thing,
-					// 		for each dydx, i need another double for loop
-					//		to loop over each pixel to match the ratio
-					// 		its going to be weird since the image is in the middle
-
-					// Update display buffer
 					intensity := Interval{0.000, 0.999}
 					display.UpdatePixel(x, y, color.RGBA{
 						R: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.X)))),
@@ -140,9 +129,6 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 		close(tileChannel)
 	}()
 
-	/*
-		todo: resultChannel is bottle neck because its sequential
-	*/
 	go func() {
 		for result := range resultChannel {
 			for y := 0; y < result.tile.height; y++ {
@@ -154,6 +140,7 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 	}()
 
 	wg.Wait()
+	time.Sleep(time.Second / 2)
 	close(resultChannel)
 	fmt.Printf("\033[1A\033[K")
 	fmt.Printf("Done in: %v\n", time.Since(t))

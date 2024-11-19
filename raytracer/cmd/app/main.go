@@ -5,6 +5,7 @@ import (
 	"github.com/gopxl/pixel/v2"
 	"github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/philippkk/coms336/raytracer/internal/materials"
+	model2 "github.com/philippkk/coms336/raytracer/internal/model"
 	"github.com/philippkk/coms336/raytracer/internal/objects"
 	"github.com/philippkk/coms336/raytracer/internal/utils"
 	"math/rand/v2"
@@ -42,21 +43,22 @@ func run() {
 	fmt.Fprintf(file, "P6\n%d %d\n%d\n", cam.ImageWidth, imageHeight, 255)
 	pixels := make([]byte, imageHeight*cam.ImageWidth*3)
 
+	moveAmount := 10.0
 	for !display.Win.Closed() {
 		if display.Win.Pressed(pixel.KeyW) {
-			cam.LookFrom.Z += 1
+			cam.LookFrom.Z += moveAmount
 			reRender = true
 		}
 		if display.Win.Pressed(pixel.KeyS) {
-			cam.LookFrom.Z -= 1
+			cam.LookFrom.Z -= moveAmount
 			reRender = true
 		}
 		if display.Win.Pressed(pixel.KeyD) {
-			cam.LookFrom.X -= 1
+			cam.LookFrom.X -= moveAmount
 			reRender = true
 		}
 		if display.Win.Pressed(pixel.KeyA) {
-			cam.LookFrom.X += 1
+			cam.LookFrom.X += moveAmount
 			reRender = true
 		}
 		if reRender {
@@ -88,16 +90,32 @@ func run() {
 }
 func main() {
 	world = createRandomScene()
+
+	fmt.Printf("\033[1A\033[K")
+	fmt.Println("loadin file")
+	model := model2.NewModel("internal/model/smolengine.obj")
+	fmt.Printf("\033[1A\033[K")
+	fmt.Printf("done!")
+
+	triangleMat := materials.Metal{utils.Vec3{1, 0, 0}, 0.2}
+
+	triangles := model.ToTriangles(triangleMat)
+	for _, triangle := range triangles {
+		world.Add(triangle)
+	}
+
+	fmt.Println("\n num of objects: ", len(world.Objects))
+	fmt.Println(" ")
 	bvhRoot := utils.NewBVHNode(world.Objects, 0, len(world.Objects))
 	world = utils.HittableList{Objects: []utils.Hittable{bvhRoot}}
 
 	cam.AspectRatio = 16.0 / 9.0
-	cam.ImageWidth = 500 //2234
-	cam.SamplesPerPixel = 5
-	cam.MaxDepth = 5
+	cam.ImageWidth = 1000 //2234
+	cam.SamplesPerPixel = 10
+	cam.MaxDepth = 10
 
 	cam.Vfov = 30
-	cam.LookFrom = utils.Vec3{0, 1, -6}
+	cam.LookFrom = utils.Vec3{3, 3, 7}
 	cam.LookAt = utils.Vec3{0, 0, 0}
 	cam.Vup = utils.Vec3{Y: 1}
 	cam.DefocusAngle = 0.0 //0.6 was nice;
@@ -105,6 +123,7 @@ func main() {
 
 	reRender = true
 	opengl.Run(run)
+
 }
 
 func openFile(filename string) {
@@ -134,7 +153,7 @@ func createRandomScene() utils.HittableList {
 		1000,
 		groundMaterial))
 
-	num := 5
+	num := 10
 	// Add many small random spheres
 	for a := -num; a < num; a++ {
 		for b := -num; b < num; b++ {
