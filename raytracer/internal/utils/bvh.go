@@ -57,31 +57,28 @@ func boxZCompare(a, b Hittable) bool {
 func NewBVHNode(objects []Hittable, start, end int) BVHNode {
 	node := BVHNode{}
 
-	// Randomly choose an axis to sort on
-	axis := rand.IntN(2) + 1
-
-	// Create comparison function based on axis
-	comparator := func(i, j int) bool {
-		if axis == 0 {
-			return boxXCompare(objects[i], objects[j])
-		} else if axis == 1 {
-			return boxYCompare(objects[i], objects[j])
-		}
-		return boxZCompare(objects[i], objects[j])
-	}
+	axis := rand.IntN(3) // Choose between 0, 1, or 2
 
 	objectSpan := end - start
 
-	if objectSpan == 1 {
+	switch objectSpan {
+	case 1:
 		node.Left = objects[start]
 		node.Right = objects[start]
-	} else if objectSpan == 2 {
-		node.Left = objects[start]
-		node.Right = objects[start+1]
-	} else {
-		// Sort the slice of objects
+	case 2:
+		// Compare the two objects directly along the chosen axis
+		// and arrange them in sorted order
+		if boxCompare(objects[start], objects[start+1], axis) {
+			node.Left = objects[start]
+			node.Right = objects[start+1]
+		} else {
+			node.Left = objects[start+1]
+			node.Right = objects[start]
+		}
+	default:
+		// Sort objects along the chosen axis
 		sort.Slice(objects[start:end], func(i, j int) bool {
-			return comparator(start+i, start+j)
+			return boxCompare(objects[start+i], objects[start+j], axis)
 		})
 
 		mid := start + objectSpan/2
@@ -89,10 +86,6 @@ func NewBVHNode(objects []Hittable, start, end int) BVHNode {
 		node.Right = NewBVHNode(objects, mid, end)
 	}
 
-	// Get the bounding box
-	leftBox := node.Left.BoundingBox()
-	rightBox := node.Right.BoundingBox()
-	node.Box = SurroundingBox(leftBox, rightBox)
-
+	node.Box = SurroundingBox(node.Left.BoundingBox(), node.Right.BoundingBox())
 	return node
 }

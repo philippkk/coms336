@@ -140,6 +140,9 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 		close(tileChannel)
 	}()
 
+	/*
+		todo: resultChannel is bottle neck because its sequential
+	*/
 	go func() {
 		for result := range resultChannel {
 			for y := 0; y < result.tile.height; y++ {

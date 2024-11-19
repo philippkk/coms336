@@ -7,6 +7,7 @@ import (
 	"github.com/philippkk/coms336/raytracer/internal/materials"
 	"github.com/philippkk/coms336/raytracer/internal/objects"
 	"github.com/philippkk/coms336/raytracer/internal/utils"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"runtime"
@@ -14,83 +15,12 @@ import (
 )
 
 var t time.Duration
+var world utils.HittableList
+var cam utils.Camera
+
+var reRender bool
 
 func run() {
-	// Your existing main() code goes here
-	// world setup, camera setup, etc.
-	var world utils.HittableList
-
-	//materialGround := materials.Lambertian{utils.Vec3{0.07, 0.2, 0.05}}
-	materialLeft := materials.Lambertian{utils.Vec3{0.0, 0.3, 0.7}}
-	//materialLeft2 := materials.Lambertian{utils.Vec3{0.7, 0.0, 0.0}}
-	materialRight := materials.Metal{utils.Vec3{0.0, 0.3, 0.7}, 0.0}
-	materialGlass := materials.Dielectric{1.50}
-	materialGlass2 := materials.Dielectric{1.00 / 1.50}
-
-	//world.Add(objects.Triangle{
-	//	utils.Vec3{1, 0, -1.0},
-	//	utils.Vec3{0, 0, -1.0},
-	//	utils.Vec3{0, 0.5, 0},
-	//	materialLeft2})
-	//
-	world.Add(
-		objects.CreateSphere(
-			utils.Ray{utils.Vec3{2, 0, -1},
-				utils.Vec3{0, 0, 0}, 0},
-			1,
-			materialGlass))
-
-	world.Add(
-		objects.CreateSphere(
-			utils.Ray{utils.Vec3{2, 0, -1},
-				utils.Vec3{0, -0.2, 0}, 0},
-			0.5,
-			materialRight))
-
-	world.Add(
-		objects.CreateSphere(
-			utils.Ray{utils.Vec3{-1, 0, -1},
-				utils.Vec3{0, 0, 0}, 0},
-			0.5,
-			materialGlass))
-
-	world.Add(
-		objects.CreateSphere(
-			utils.Ray{utils.Vec3{-1, 0, -1},
-				utils.Vec3{0, 0, 0}, 0},
-			0.4,
-			materialGlass2))
-
-	world.Add(
-		objects.CreateSphere(
-			utils.Ray{utils.Vec3{-1, 0, -1},
-				utils.Vec3{0, 0, 0}, 0},
-			0.2,
-			materialLeft))
-
-	world.Add(
-		objects.CreateSphere(
-			utils.Ray{utils.Vec3{0, -100.5, -1},
-				utils.Vec3{0, 0, 0}, 0},
-			100,
-			materialRight))
-
-	bvhRoot := utils.NewBVHNode(world.Objects, 0, len(world.Objects))
-	world = utils.HittableList{Objects: []utils.Hittable{bvhRoot}}
-
-	var cam utils.Camera
-	cam.AspectRatio = 16.0 / 9.0
-	cam.ImageWidth = 1000 //2234
-	cam.SamplesPerPixel = 100
-	cam.MaxDepth = 100
-
-	cam.Vfov = 30
-	cam.LookFrom = utils.Vec3{0, 1, -6}
-	cam.LookAt = utils.Vec3{0, 0, 0}
-	cam.Vup = utils.Vec3{Y: 1}
-	cam.DefocusAngle = 0.0 //0.6 was nice;
-	cam.Focusdist = 5
-
 	imageHeight := int(float64(cam.ImageWidth) / cam.AspectRatio)
 	if imageHeight < 0 {
 		imageHeight = 1
@@ -115,19 +45,26 @@ func run() {
 	for !display.Win.Closed() {
 		if display.Win.Pressed(pixel.KeyW) {
 			cam.LookFrom.Z += 1
+			reRender = true
 		}
 		if display.Win.Pressed(pixel.KeyS) {
 			cam.LookFrom.Z -= 1
+			reRender = true
 		}
 		if display.Win.Pressed(pixel.KeyD) {
 			cam.LookFrom.X -= 1
+			reRender = true
 		}
 		if display.Win.Pressed(pixel.KeyA) {
 			cam.LookFrom.X += 1
+			reRender = true
 		}
-		finishTime := cam.Render(world, display, pixels)
-		if finishTime > t {
-			t = finishTime
+		if reRender {
+			finishTime := cam.Render(world, display, pixels)
+			if finishTime > t {
+				t = finishTime
+			}
+			reRender = false
 		}
 		display.Win.Update()
 	}
@@ -150,6 +87,23 @@ func run() {
 
 }
 func main() {
+	world = createRandomScene()
+	bvhRoot := utils.NewBVHNode(world.Objects, 0, len(world.Objects))
+	world = utils.HittableList{Objects: []utils.Hittable{bvhRoot}}
+
+	cam.AspectRatio = 16.0 / 9.0
+	cam.ImageWidth = 500 //2234
+	cam.SamplesPerPixel = 5
+	cam.MaxDepth = 5
+
+	cam.Vfov = 30
+	cam.LookFrom = utils.Vec3{0, 1, -6}
+	cam.LookAt = utils.Vec3{0, 0, 0}
+	cam.Vup = utils.Vec3{Y: 1}
+	cam.DefocusAngle = 0.0 //0.6 was nice;
+	cam.Focusdist = 5
+
+	reRender = true
 	opengl.Run(run)
 }
 
@@ -169,4 +123,56 @@ func openFile(filename string) {
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 	}
+}
+
+func createRandomScene() utils.HittableList {
+	var world utils.HittableList
+
+	groundMaterial := materials.Lambertian{Albedo: utils.Vec3{0.5, 0.5, 0.5}}
+	world.Add(objects.CreateSphere(
+		utils.Ray{Origin: utils.Vec3{0, -1000, 0}},
+		1000,
+		groundMaterial))
+
+	num := 5
+	// Add many small random spheres
+	for a := -num; a < num; a++ {
+		for b := -num; b < num; b++ {
+			chooseMat := rand.Float64()
+			center := utils.Vec3{
+				X: float64(a) + 0.9*rand.Float64(),
+				Y: 0.2,
+				Z: float64(b) + 0.9*rand.Float64(),
+			}
+
+			if center.MinusEq(utils.Vec3{4, 0.2, 0}).Length() > 0.9 {
+				var sphereMaterial utils.Material
+
+				if chooseMat < 0.8 {
+					// Diffuse
+					albedo := utils.Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
+					sphereMaterial = materials.Lambertian{Albedo: albedo}
+				} else if chooseMat < 0.95 {
+					// Metal
+					albedo := utils.Vec3{
+						rand.Float64()*0.5 + 0.5,
+						rand.Float64()*0.5 + 0.5,
+						rand.Float64()*0.5 + 0.5,
+					}
+					fuzz := rand.Float64() * 0.5
+					sphereMaterial = materials.Metal{Albedo: albedo, Fuzz: fuzz}
+				} else {
+					// Glass
+					sphereMaterial = materials.Dielectric{RefractionIndex: 1.5}
+				}
+
+				world.Add(objects.CreateSphere(
+					utils.Ray{Origin: center},
+					0.2,
+					sphereMaterial))
+			}
+		}
+	}
+
+	return world
 }

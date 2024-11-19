@@ -56,46 +56,26 @@ func (a *AABB) AxisInterval(n int) Interval {
 
 // Hit tests if a ray intersects with the AABB
 func (a *AABB) Hit(r *Ray, rayT Interval) bool {
-	rayOrig := r.Origin
-	rayDir := r.Direction
+	tMin := rayT.Min
+	tMax := rayT.Max
 
 	for axis := 0; axis < 3; axis++ {
 		ax := a.AxisInterval(axis)
-		var rayOrigAxis, rayDirAxis float64
-
-		// Get the appropriate component based on axis
-		switch axis {
-		case 0:
-			rayOrigAxis = rayOrig.X
-			rayDirAxis = rayDir.X
-		case 1:
-			rayOrigAxis = rayOrig.Y
-			rayDirAxis = rayDir.Y
-		case 2:
-			rayOrigAxis = rayOrig.Z
-			rayDirAxis = rayDir.Z
-		}
+		rayOrigAxis := r.Origin.Get(axis)
+		rayDirAxis := r.Direction.Get(axis)
 
 		adinv := 1.0 / rayDirAxis
 		t0 := (ax.Min - rayOrigAxis) * adinv
 		t1 := (ax.Max - rayOrigAxis) * adinv
 
-		if t0 < t1 {
-			if t0 > rayT.Min {
-				rayT.Min = t0
-			}
-			if t1 < rayT.Max {
-				rayT.Max = t1
-			}
-		} else {
-			if t1 > rayT.Min {
-				rayT.Min = t1
-			}
-			if t0 < rayT.Max {
-				rayT.Max = t0
-			}
+		if adinv < 0 {
+			t0, t1 = t1, t0
 		}
-		if rayT.Max <= rayT.Min {
+
+		tMin = max(t0, tMin)
+		tMax = min(t1, tMax)
+
+		if tMax <= tMin {
 			return false
 		}
 	}
