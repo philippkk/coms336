@@ -5,6 +5,20 @@ type AABB struct {
 	X, Y, Z Interval
 }
 
+func (a AABB) LongestAxis() int {
+	if a.X.size() > a.Y.size() {
+		if a.X.size() > a.Z.size() {
+			return 0
+		}
+	} else {
+		if a.Y.size() > a.Z.size() {
+			return 1
+		}
+	}
+
+	return 2
+}
+
 func NewAABB() AABB {
 	return AABB{
 		X: Interval{},

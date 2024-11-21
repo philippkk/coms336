@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"math/rand/v2"
 	"sort"
 )
 
@@ -57,7 +56,12 @@ func boxZCompare(a, b Hittable) bool {
 func NewBVHNode(objects []Hittable, start, end int) BVHNode {
 	node := BVHNode{}
 
-	axis := rand.IntN(3) // Choose between 0, 1, or 2
+	bbox := AABB{}
+
+	for i := start; i < end; i++ {
+		bbox = SurroundingBox(bbox, objects[i].BoundingBox())
+	}
+	axis := bbox.LongestAxis()
 
 	objectSpan := end - start
 
