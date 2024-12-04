@@ -49,7 +49,16 @@ func (s Sphere) Hit(ray *utils.Ray, rayT utils.Interval, rec *utils.HitRecord) b
 	rec.P = ray.At(rec.T)
 	outwardNormal := (rec.P.MinusEq(currentCenter)).TimesConst(1.0 / s.Radius)
 	rec.SetFaceNormal(ray, outwardNormal)
+	rec.U, rec.V = SphereUV(outwardNormal)
 	rec.Mat = s.Mat
 
 	return true
+}
+
+func SphereUV(p utils.Vec3) (u, v float64) {
+	theta := math.Acos(p.Y / p.Length())
+	phi := math.Atan2(p.Z, p.X)
+	u = 0.5 + phi/(2*math.Pi)
+	v = 1 - theta/math.Pi
+	return
 }

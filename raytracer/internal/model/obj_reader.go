@@ -3,8 +3,10 @@ package model
 import (
 	"bufio"
 	"fmt"
+	"github.com/philippkk/coms336/raytracer/internal/materials"
 	"github.com/philippkk/coms336/raytracer/internal/objects"
 	"github.com/philippkk/coms336/raytracer/internal/utils"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -20,16 +22,21 @@ type Model struct {
 
 	// For the fun "f" in the obj file.
 	VecIndices, NormalIndices, UvIndices []float32
+
+	MaterialLib     map[string]MTLMaterial
+	CurrentMaterial string
 }
 
-func NewModel(file string) Model {
-	objFile, err := os.Open(file)
+func NewModel(obj, mtlFile string) Model {
+	objFile, err := os.Open(obj)
 	if err != nil {
 		panic(err)
 	}
 	defer objFile.Close()
 
 	model := Model{}
+
+	model.MaterialLib = ParseMTLFile(mtlFile)
 
 	// Scan the file line by line
 	scanner := bufio.NewScanner(objFile)
@@ -69,7 +76,14 @@ func NewModel(file string) Model {
 				processFace(vertices[i], &model)
 				processFace(vertices[i+1], &model)
 			}
+		//case "mtllib":
+		//	// This would typically be handled before parsing the whole file
+		//	model.MaterialLib = ParseMTLFile(fields[1])
+		case "usemtl":
+			// Set current material
+			model.CurrentMaterial = fields[1]
 		}
+
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -104,7 +118,7 @@ func processFace(face string, model *Model) {
 	}
 }
 
-func (model Model) ToTriangles(mat utils.Material) []objects.Triangle {
+func (model Model) ToTriangles(mat utils.Material, randomColor bool) []objects.Triangle {
 	var triangles []objects.Triangle
 
 	for i := 0; i < len(model.VecIndices); i += 3 {
@@ -112,12 +126,7 @@ func (model Model) ToTriangles(mat utils.Material) []objects.Triangle {
 		v1Index := int(model.VecIndices[i+1])
 		v2Index := int(model.VecIndices[i+2])
 
-		if v0Index < 0 || v1Index < 0 || v2Index < 0 ||
-			v0Index >= len(model.Vecs) || v1Index >= len(model.Vecs) || v2Index >= len(model.Vecs) {
-			fmt.Println("Skipping invalid triangle indices:", v0Index, v1Index, v2Index)
-			continue
-		}
-
+		// Get vertex positions
 		v0 := model.Vecs[v0Index]
 		v1 := model.Vecs[v1Index]
 		v2 := model.Vecs[v2Index]
@@ -126,7 +135,13 @@ func (model Model) ToTriangles(mat utils.Material) []objects.Triangle {
 		t1 := utils.Vec3{X: float64(v1.X()), Y: float64(v1.Y()), Z: float64(v1.Z())}
 		t2 := utils.Vec3{X: float64(v2.X()), Y: float64(v2.Y()), Z: float64(v2.Z())}
 
-		triangles = append(triangles, objects.CreateTriangle(t0, t1, t2, mat))
+		if randomColor {
+			albedo := utils.Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
+			randomColorMat := materials.Metal{albedo, 0}
+			triangles = append(triangles, objects.CreateTriangle(t0, t1, t2, randomColorMat))
+		} else {
+			triangles = append(triangles, objects.CreateTriangle(t0, t1, t2, mat))
+		}
 	}
 
 	return triangles

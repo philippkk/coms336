@@ -2,7 +2,7 @@ package utils
 
 type HitRecord struct {
 	P, Normal Vec3
-	T         float64
+	T, U, V   float64
 	FrontFace bool
 	Mat       Material
 }

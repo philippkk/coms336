@@ -140,7 +140,6 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 	}()
 
 	wg.Wait()
-	time.Sleep(time.Second / 2)
 	close(resultChannel)
 	fmt.Printf("\033[1A\033[K")
 	fmt.Printf("Done in: %v\n", time.Since(t))

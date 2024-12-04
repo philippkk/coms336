@@ -20,7 +20,7 @@ func (d Dielectric) Scatter(rIn, scattered *utils.Ray, attenuation *utils.Vec3, 
 
 	unitDirection := rIn.Direction.UnitVector()
 
-	cosTheta := min((unitDirection.Neg()).Dot(rec.Normal), 1.0)
+	cosTheta := math.Min((unitDirection.Neg()).Dot(rec.Normal), 1)
 	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
 
 	cannotRefract := ri*sinTheta > 1.0
