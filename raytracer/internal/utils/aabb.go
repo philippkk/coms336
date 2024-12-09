@@ -5,7 +5,7 @@ type AABB struct {
 	X, Y, Z Interval
 }
 
-func (a AABB) LongestAxis() int {
+func (a *AABB) LongestAxis() int {
 	if a.X.size() > a.Y.size() {
 		if a.X.size() > a.Z.size() {
 			return 0
@@ -17,6 +17,18 @@ func (a AABB) LongestAxis() int {
 	}
 
 	return 2
+}
+func (a *AABB) PadToMinimums() {
+	delta := 0.0001
+	if a.X.size() < delta {
+		a.X = a.X.expand(delta)
+	}
+	if a.Y.size() < delta {
+		a.Y = a.Y.expand(delta)
+	}
+	if a.Z.size() < delta {
+		a.Z = a.Z.expand(delta)
+	}
 }
 
 func NewAABB() AABB {
@@ -53,7 +65,9 @@ func NewAABBFromPoints(a, b Vec3) AABB {
 	} else {
 		z = Interval{b.Z, a.Z}
 	}
-	return AABB{X: x, Y: y, Z: z}
+	thing := AABB{X: x, Y: y, Z: z}
+	thing.PadToMinimums()
+	return thing
 }
 
 // AxisInterval returns the interval for the specified axis

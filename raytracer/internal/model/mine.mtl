@@ -1,0 +1,252 @@
+# Blender 4.3.0 MTL File: 'None'
+# www.blender.org
+
+newmtl Brown_Mushroom.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Brown_Mushroom_(block).001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Clay.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Coal_Ore.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Dandelion.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Dirt.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Grass.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Grass_Block.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Gravel.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Iron_Ore.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Large_Flowers.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Lava.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_Ke Mineways2Skfb-RGBA.png
+
+newmtl Leaves.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Leaves_(Acacia/Dark_Oak).001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Monster_Egg.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Poppy.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Red_Mushroom_(block).001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Sand.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Snow_(layer).001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Stationary_Lava.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+map_Ke Mineways2Skfb-RGBA.png
+
+newmtl Stationary_Water.001
+Ns 0.000000
+Ka 0.200000 0.200000 0.200000
+Ks 0.030000 0.030000 0.030000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 3
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Stone.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Water.001
+Ns 0.000000
+Ka 0.200000 0.200000 0.200000
+Ks 0.030000 0.030000 0.030000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 3
+map_Kd Mineways2Skfb-RGBA.png
+map_d Mineways2Skfb-RGBA.png
+
+newmtl Wood.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png
+
+newmtl Wood_(Acacia/Dark_Oak).001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Mineways2Skfb-RGBA.png

@@ -16,6 +16,8 @@ type Camera struct {
 	center, pixel00Loc, pixelDeltaU, pixelDeltaV, LookFrom, LookAt, Vup Vec3
 	u, v, w, defocusDiskU, defocusDiskV                                 Vec3
 	DefocusAngle, Focusdist                                             float64
+	Cube                                                                CubeMap
+	SkipCube                                                            bool
 }
 type Tile struct {
 	x, y          int // Top-left corner
@@ -50,14 +52,14 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 				break
 			}
 
-			//fmt.Printf("\033[1A\033[K")
-			//fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
-			//	float64(completed)/float64(totalTiles)*100,
-			//	completed, totalTiles)
+			fmt.Printf("\033[1A\033[K")
+			fmt.Printf("Progress: %.1f%% (%d/%d tiles)\n",
+				float64(completed)/float64(totalTiles)*100,
+				completed, totalTiles)
 
 			// 60fps
 			display.Refresh()
-			time.Sleep(time.Second / 60)
+			time.Sleep(time.Second / 30)
 		}
 	}()
 
@@ -80,18 +82,19 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 					pixelColor := Vec3{0, 0, 0}
 					for sample := 0; sample < c.SamplesPerPixel; sample++ {
 						ray := c.getRay(x, y)
-						pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world))
+						pixelColor = pixelColor.PlusEq(rayColor(&ray, c.MaxDepth, &world, &c.Cube, c.SkipCube))
 					}
 
 					finalColor := pixelColor.TimesConst(c.pixelSamplesScale)
 					pixelIndex := (dy*effectiveWidth + dx) * 3
 					WriteColor(tileBuffer, pixelIndex, finalColor)
 
+					toneMappedColor := ACESToneMap(finalColor)
 					intensity := Interval{0.000, 0.999}
 					display.UpdatePixel(x, y, color.RGBA{
-						R: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.X)))),
-						G: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.Y)))),
-						B: uint8(int(256 * intensity.clamp(LinearToGamma(finalColor.Z)))),
+						R: uint8(int(256 * intensity.clamp(LinearToGamma(toneMappedColor.X)))),
+						G: uint8(int(256 * intensity.clamp(LinearToGamma(toneMappedColor.Y)))),
+						B: uint8(int(256 * intensity.clamp(LinearToGamma(toneMappedColor.Z)))),
 						A: 255,
 					})
 				}
@@ -141,7 +144,7 @@ func (c *Camera) Render(world HittableList, display *DisplayBuffer, pixels []byt
 
 	wg.Wait()
 	close(resultChannel)
-	fmt.Printf("\033[1A\033[K")
+	//fmt.Printf("\033[1A\033[K")
 	fmt.Printf("Done in: %v\n", time.Since(t))
 	return time.Since(t)
 }
@@ -177,7 +180,7 @@ func (c *Camera) initialize() {
 	c.defocusDiskU = c.u.TimesConst(defocusRadius)
 	c.defocusDiskV = c.v.TimesConst(defocusRadius)
 }
-func rayColor(r *Ray, depth int, world Hittable) Vec3 {
+func rayColor(r *Ray, depth int, world Hittable, cubeMap *CubeMap, SkipCube bool) Vec3 {
 	if depth <= 0 {
 		return Vec3{0, 0, 0}
 	}
@@ -187,16 +190,26 @@ func rayColor(r *Ray, depth int, world Hittable) Vec3 {
 	if world.Hit(r, Interval{0.001, math.Inf(+1)}, &rec) {
 		var scattered Ray
 		var attenuation Vec3
+		colorFromEmission := rec.Mat.ColorEmitted(rec.U, rec.V, rec.P)
+
 		if rec.Mat.Scatter(r, &scattered, &attenuation, &rec) {
-			return rayColor(&scattered, depth-1, world).TimesEq(attenuation)
+			colorFromScatter := rayColor(&scattered, depth-1, world, cubeMap, SkipCube).TimesEq(attenuation)
+			return colorFromEmission.PlusEq(colorFromScatter)
 		}
-		return Vec3{0, 0, 0}
+		return colorFromEmission
 	}
 
+	// Background handling remains the same
 	unitDirection := r.Direction.Normalize()
+	if !SkipCube {
+		return cubeMap.SampleCubeMap(unitDirection)
+	}
+
 	a := 0.5 * (unitDirection.Y + 1.0)
-	white := Vec3{X: 1.0, Y: 1.0, Z: 1.0}
-	blue := Vec3{X: 0.5, Y: 0.7, Z: 1.0}
+	white := Vec3{X: 0, Y: 0, Z: 0}
+	blue := Vec3{X: 0, Y: 0, Z: 0}
+	//white := Vec3{X: 1.0, Y: 1.0, Z: 1.0}
+	//blue := Vec3{X: 0.5, Y: 0.7, Z: 1.0}
 	return white.TimesConst(1.0 - a).PlusEq(blue.TimesConst(a))
 }
 

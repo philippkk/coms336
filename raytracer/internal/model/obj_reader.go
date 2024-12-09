@@ -3,13 +3,14 @@ package model
 import (
 	"bufio"
 	"fmt"
-	"github.com/philippkk/coms336/raytracer/internal/materials"
 	"github.com/philippkk/coms336/raytracer/internal/objects"
 	"github.com/philippkk/coms336/raytracer/internal/utils"
-	"math/rand"
+	"github.com/philippkk/coms336/raytracer/internal/utils/material"
+	"math"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -23,8 +24,9 @@ type Model struct {
 	// For the fun "f" in the obj file.
 	VecIndices, NormalIndices, UvIndices []float32
 
-	MaterialLib     map[string]MTLMaterial
-	CurrentMaterial string
+	MaterialLib          map[string]MTLMaterial
+	MaterialIndexChanges []int    // Indices where material changes occur
+	MaterialNames        []string // Names of materials at each change point
 }
 
 func NewModel(obj, mtlFile string) Model {
@@ -34,12 +36,17 @@ func NewModel(obj, mtlFile string) Model {
 	}
 	defer objFile.Close()
 
-	model := Model{}
+	model := Model{
+		MaterialLib:          ParseMTLFile(mtlFile),
+		MaterialIndexChanges: []int{},
+		MaterialNames:        []string{},
+	}
 
 	model.MaterialLib = ParseMTLFile(mtlFile)
 
 	// Scan the file line by line
 	scanner := bufio.NewScanner(objFile)
+	triangleCount := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
@@ -75,13 +82,12 @@ func NewModel(obj, mtlFile string) Model {
 				processFace(vertices[0], &model)
 				processFace(vertices[i], &model)
 				processFace(vertices[i+1], &model)
+				triangleCount++
 			}
-		//case "mtllib":
-		//	// This would typically be handled before parsing the whole file
-		//	model.MaterialLib = ParseMTLFile(fields[1])
 		case "usemtl":
 			// Set current material
-			model.CurrentMaterial = fields[1]
+			model.MaterialIndexChanges = append(model.MaterialIndexChanges, triangleCount)
+			model.MaterialNames = append(model.MaterialNames, fields[1])
 		}
 
 	}
@@ -89,7 +95,6 @@ func NewModel(obj, mtlFile string) Model {
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-
 	return model
 }
 
@@ -107,21 +112,55 @@ func processFace(face string, model *Model) {
 		nIdx, _ = strconv.Atoi(segments[2])
 	}
 
-	if vIdx != 0 {
+	// OBJ indices are 1-based, convert to 0-based
+	if vIdx > 0 {
 		model.VecIndices = append(model.VecIndices, float32(vIdx-1))
 	}
-	if tIdx != 0 {
+	if tIdx > 0 {
 		model.UvIndices = append(model.UvIndices, float32(tIdx-1))
 	}
-	if nIdx != 0 {
+	if nIdx > 0 {
 		model.NormalIndices = append(model.NormalIndices, float32(nIdx-1))
 	}
 }
 
-func (model Model) ToTriangles(mat utils.Material, randomColor bool) []objects.Triangle {
+func (model Model) ToTriangles(defaultMat utils.Material, name string) []objects.Triangle {
 	var triangles []objects.Triangle
 
+	// Pre-cache materials to avoid repeated texture loading
+	materialCache := make(map[string]utils.Material)
+	materialCache["default"] = defaultMat
+
+	// Pre-cache materials for better performance
+	for materialName, mtlMaterial := range model.MaterialLib {
+		if mtlMaterial.DiffuseTexture != "" {
+			// Debug print for the specific material
+			fmt.Printf("Loading material: %s with texture: %s\n", materialName, mtlMaterial.DiffuseTexture)
+
+			texture, err := utils.NewImageTexture("internal/model/" + name + "/" + mtlMaterial.DiffuseTexture)
+			if err == nil {
+				// Print texture details after successful loading
+				fmt.Printf("Successfully loaded texture for %s: %dx%d\n",
+					materialName, texture.Width, texture.Height)
+
+				if mtlMaterial.DiffuseTexture == "1_Diffuse.png" {
+					materialCache[materialName] = material.Metal{utils.Vec3{0, 0.16078431372, 0.51764705882}, 0.4}
+				} else {
+					materialCache[materialName] = material.NewLambertian(texture)
+				}
+			}
+		}
+	}
+
+	// Pre-allocate the slice to reduce allocations
+	triangles = make([]objects.Triangle, 0, len(model.VecIndices)/3)
+
+	// Use a single progress tracker
+	totalTriangles := len(model.VecIndices) / 3
+	lastProgressPrint := time.Now()
+
 	for i := 0; i < len(model.VecIndices); i += 3 {
+		// Get vertex positions (existing code)
 		v0Index := int(model.VecIndices[i])
 		v1Index := int(model.VecIndices[i+1])
 		v2Index := int(model.VecIndices[i+2])
@@ -135,14 +174,97 @@ func (model Model) ToTriangles(mat utils.Material, randomColor bool) []objects.T
 		t1 := utils.Vec3{X: float64(v1.X()), Y: float64(v1.Y()), Z: float64(v1.Z())}
 		t2 := utils.Vec3{X: float64(v2.X()), Y: float64(v2.Y()), Z: float64(v2.Z())}
 
-		if randomColor {
-			albedo := utils.Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
-			randomColorMat := materials.Metal{albedo, 0}
-			triangles = append(triangles, objects.CreateTriangle(t0, t1, t2, randomColorMat))
+		// Get vertex normals
+		var n0, n1, n2 utils.Vec3
+		if len(model.NormalIndices) > i+2 {
+			nIndex0 := int(model.NormalIndices[i])
+			nIndex1 := int(model.NormalIndices[i+1])
+			nIndex2 := int(model.NormalIndices[i+2])
+
+			if nIndex0 < len(model.Normals) && nIndex1 < len(model.Normals) && nIndex2 < len(model.Normals) {
+				vn0 := model.Normals[nIndex0]
+				vn1 := model.Normals[nIndex1]
+				vn2 := model.Normals[nIndex2]
+
+				n0 = utils.Vec3{X: float64(vn0.X()), Y: float64(vn0.Y()), Z: float64(vn0.Z())}
+				n1 = utils.Vec3{X: float64(vn1.X()), Y: float64(vn1.Y()), Z: float64(vn1.Z())}
+				n2 = utils.Vec3{X: float64(vn2.X()), Y: float64(vn2.Y()), Z: float64(vn2.Z())}
+			}
+		}
+
+		// Find the material for this triangle (existing code)
+		triangleMat := defaultMat
+		if len(model.MaterialIndexChanges) > 0 {
+			materialIndex := findMaterialIndexForTriangle(i, model.MaterialIndexChanges)
+			if materialIndex != -1 {
+				materialName := model.MaterialNames[materialIndex]
+				if cachedMat, exists := materialCache[materialName]; exists {
+					triangleMat = cachedMat
+				}
+			}
+		}
+
+		// Create triangle with normals
+		var triangle objects.Triangle
+		if len(model.NormalIndices) > 0 {
+			triangle = objects.CreateTriangleWithNormals(
+				t0, t1, t2,
+				n0, n1, n2,
+				triangleMat,
+				getUVCoord(model, i),
+				getUVCoord(model, i+1),
+				getUVCoord(model, i+2),
+			)
 		} else {
-			triangles = append(triangles, objects.CreateTriangle(t0, t1, t2, mat))
+			triangle = objects.CreateTriangleWithUV(
+				t0, t1, t2,
+				triangleMat,
+				getUVCoord(model, i),
+				getUVCoord(model, i+1),
+				getUVCoord(model, i+2),
+			)
+		}
+
+		triangles = append(triangles, triangle)
+		// Efficient progress tracking
+		if time.Since(lastProgressPrint) > 500*time.Millisecond {
+			progress := float64(i/3) / float64(totalTriangles) * 100
+			fmt.Printf("\rProcessing triangles: %.2f%% (%d/%d)", progress, i/3, totalTriangles)
+			lastProgressPrint = time.Now()
 		}
 	}
 
+	fmt.Println("\rTriangle processing complete.                    ")
 	return triangles
+}
+
+// Optimized material index finding
+func findMaterialIndexForTriangle(triangleIndex int, materialChanges []int) int {
+	// Binary search would be even faster for large models
+	for i := len(materialChanges) - 1; i >= 0; i-- {
+		if materialChanges[i] <= triangleIndex/3 {
+			return i
+		}
+	}
+	return -1
+}
+
+// Helper function to get UV coordinates
+func wrapUV(value float64) float64 {
+	wrapped := value - math.Floor(value) // This handles both positive and negative values
+	if wrapped < 0 {
+		wrapped += 1.0
+	}
+	return wrapped
+}
+
+func getUVCoord(model Model, index int) utils.Vec2 {
+	if len(model.UvIndices) > index && int(model.UvIndices[index]) < len(model.Uvs) {
+		uv := model.Uvs[int(model.UvIndices[index])]
+		return utils.Vec2{
+			X: wrapUV(float64(uv.X())),
+			Y: wrapUV(float64(uv.Y())),
+		}
+	}
+	return utils.Vec2{X: 0, Y: 0}
 }
